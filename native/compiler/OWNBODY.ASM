@@ -346,8 +346,8 @@ OW_LEASA:                      ; The path is parsed:
     LD   A,$E5                     ; PUSH HL,
     JP   GX_PUSHA                  ; two bytes pushed; return.
 .LEASE:                        ; Not the routine's own:
-    LD   A,DG_LEASE                ; lease, at
-    JP   EX_EVAL                   ; the argument.
+    CALL EX_REVAL                  ; Raise the code below at the expression's first token.
+    DB   DG_LEASE                  ; lease (107); no return.
 
 ;@ROUTINE OUT A CLOBBERS BC,DE,HL,CARRY,ZERO,SIGN,PARITY,HALFCARRY
 ; `id(PATH)` of a record, the path in hand and `id` at AC_BOUND
@@ -363,8 +363,7 @@ OW_LEASA:                      ; The path is parsed:
 
 OW_IDREC:                      ; The path is parsed.
     LD   A,(RO_OTYPE)              ; A record's
-    CALL AG_DESC                   ; descriptor
-    LD   A,(HL)                    ; (its
+    CALL AG_KIND                   ; Its descriptor in HL, its kind in A.
     CP   AG_KREC                   ; kind),
     JP   NZ,.OWNER                 ; alone,
     CALL FW_ALONE                  ; with

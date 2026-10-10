@@ -294,8 +294,8 @@ EX_NOT:
     JP   EX_FOLD                   ; wrapped to the type; return.
 .FLOAT:                        ; An f32 operand (unaryNot):
     EX   DE,HL                     ; at `not`,
-    LD   A,DG_CLASH                ; type-mismatch.
-    JP   DG_HERE                   ; No return.
+    CALL DG_RHERE                  ; Raise the code below at offset HL.
+    DB   DG_CLASH                  ; type-mismatch (41); no return.
 
 ; Boolean `and` and `or` short-circuit: after a computed left operand, OR A
 ; and a jump over the right operand to a label (GX_SKIP), which is defined
@@ -681,6 +681,15 @@ EX_FITS:
 ;@ROUTINE NORETURN
 ; Raise DG_CLASH, or diagnostic A at EX_EVAL, at the first token of the
 ; expression just parsed (EX_START).
+
+;@ROUTINE NORETURN
+; Raise the diagnostic whose code is the byte after the CALL at the first
+; token of the expression just parsed, as EX_EVAL does.
+
+EX_REVAL:                      ; The code follows the CALL.
+    POP  HL                        ; HL addresses the code.
+    LD   A,(HL)                    ; Fetch the diagnostic's code.
+    JR   EX_EVAL                   ; Raise it at the expression's start.
 
 EX_EFIT:                       ; A value of the wrong type.
     LD   A,DG_CLASH                ; Diagnostic: type mismatch.

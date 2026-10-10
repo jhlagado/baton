@@ -15,8 +15,7 @@ AG_SCAL:
     PUSH DE
     PUSH HL
     LD   C,A
-    CALL AG_DESC
-    LD   A,(HL)
+    CALL AG_KIND                   ; Its descriptor in HL, its kind in A.
     CP   AG_KENUM
     LD   A,C
     POP  HL
@@ -85,8 +84,7 @@ EN_MEM:                        ; D is the name's class byte, BC its payload.
     CP   SY_TYPE                   ; Only a type name is exactly SY_TYPE; a pool adds SY_GLOB.
     JR   NZ,.CLASS                 ; Anything else is wrong-class.
     LD   A,C                       ; A is the type's ID, the payload's low byte.
-    CALL AG_DESC                   ; HL addresses the type's descriptor; BC is kept.
-    LD   A,(HL)                    ; Load the descriptor's kind.
+    CALL AG_KIND                   ; Its descriptor in HL, its kind in A.
     CP   AG_KENUM                  ; Is it an enum?
 .CLASS:                        ; Not an enum type: zero clear here.
     LD   A,DG_CLASS                ; The diagnostic is wrong-class;

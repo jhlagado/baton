@@ -92,6 +92,14 @@ AG_RENT:                       ; A is the record's ordinal.
     RET                            ; HL is the entry.
 
 ;@ROUTINE IN A OUT A,HL CLOBBERS CARRY,ZERO,SIGN,PARITY,HALFCARRY,DE
+; AG_DESC, then A is the descriptor's kind (AG_TKIND, its first byte).
+
+AG_KIND:                       ; A is the type's ID.
+    CALL AG_DESC                   ; HL addresses the type's descriptor.
+    LD   A,(HL)                    ; A is its first byte, the kind.
+    RET                            ; Done.
+
+;@ROUTINE IN A OUT A,HL CLOBBERS CARRY,ZERO,SIGN,PARITY,HALFCARRY,DE
 ; Address the four-byte descriptor of dynamic type ID A in HL. A returns the
 ; table index (the ID less AG_FIRST). A File has no descriptor, no fields
 ; and no elements: it raises DG_CLASH.
@@ -478,8 +486,7 @@ AG_PARSE:
     JR   C,.SCALAR                 ; Yes: parse a constant.
     CALL PL_ISHND                  ; A handle has no
     JR   C,.HANDLE                 ; static initializer.
-    CALL AG_DESC                   ; Address its descriptor.
-    LD   A,(HL)                    ; Fetch the kind.
+    CALL AG_KIND                   ; Its descriptor in HL, its kind in A.
     CP   AG_KSTR                   ; A bounded string?
     JR   Z,.STRING                 ; Parse a string literal.
     CP   AG_KREC                   ; A record?

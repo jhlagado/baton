@@ -65,8 +65,8 @@ HN_NEW:                        ; `new` is next.
     CALL PL_FIND                   ; a pool?
     POP  BC                        ; (the form)
     JR   C,.POOL                   ; Yes.
-    LD   A,DG_CLASS                ; No: wrong-class,
-    JP   DG_NAMED                  ; naming it.
+    CALL DG_RNAME                  ; Raise the code below at the current name, naming it.
+    DB   DG_CLASS                  ; wrong-class (30); no return.
 .POOL:                         ; A is the pool's index.
     LD   B,A                       ; Kept.
     ADD  A,A                       ; Its handle:
@@ -205,8 +205,8 @@ HN_NEW:                        ; `new` is next.
     CALL DG_RAISE                  ; extra one.
     DB   DG_ARITY                  ; No return.
 .FORWARD:                      ; The pool has no record yet:
-    LD   A,DG_PINC                 ; pool-incomplete,
-    JP   DG_NAMED                  ; naming it.
+    CALL DG_RNAME                  ; Raise the code below at the current name, naming it.
+    DB   DG_PINC                   ; pool-incomplete (52); no return.
 
 ;@ROUTINE IN E CLOBBERS A,BC,DE,HL,IX,IY,CARRY,ZERO,SIGN,PARITY,HALFCARRY
 ; Parse an owning value for a handle of type E into HL at run time
@@ -259,8 +259,8 @@ HN_OWN0:                       ; E is the handle's type.
     CALL HN_TAIL                   ; unless an operand;
     POP  DE                        ; (the type)
     POP  HL                        ; at the
-    LD   A,DG_NMOVE                ; value.
-    JP   DG_HERE                   ; No return.
+    CALL DG_RHERE                  ; Raise the code below at offset HL.
+    DB   DG_NMOVE                  ; needs-move (100); no return.
 .IDEX:                         ; id(...):
     CALL HN_IDEX                   ; an identifier,
     JR   .OTHER                    ; no owner.
@@ -299,8 +299,8 @@ HN_OWN0:                       ; E is the handle's type.
     JR   NZ,.SAME                  ; target only.
 .CLASH:                        ; Not the target's:
     POP  HL                        ; type-mismatch
-    LD   A,DG_CLASH                ; at the
-    JP   DG_HERE                   ; value.
+    CALL DG_RHERE                  ; Raise the code below at offset HL.
+    DB   DG_CLASH                  ; type-mismatch (41); no return.
 .SAME:                         ; It fits.
     POP  HL                        ; (dropped)
     LD   A,FW_VALUE                ; A value

@@ -251,8 +251,7 @@ RO_PATH:
     JR   Z,.STRING                 ; Its length or capacity.
     CP   AG_OPEN                   ; An open array?
     JR   NC,.OPEN                  ; Its length.
-    CALL AG_DESC                   ; HL addresses the descriptor.
-    LD   A,(HL)                    ; Its kind.
+    CALL AG_KIND                   ; Its descriptor in HL, its kind in A.
     CP   AG_KREC                   ; A record?
     JR   Z,RO_FIELD                ; Find the field.
     CP   AG_KSTR                   ; A string?
@@ -384,8 +383,7 @@ RO_INDEX:
     JR   Z,.BASE                   ; is one.
     CP   AG_OPEN                   ; An open array
     JR   NC,.ARRAY                 ; is not.
-    CALL AG_DESC                   ; HL addresses the descriptor.
-    LD   A,(HL)                    ; Its kind:
+    CALL AG_KIND                   ; Its descriptor in HL, its kind in A.
     CP   AG_KREC                   ; a record
     JR   Z,.NOINDEX                ; cannot be indexed;
     CP   AG_KSTR                   ; a string
@@ -872,8 +870,8 @@ RO_WRITE:
     LD   A,(RO_PRO)                ; A read-only path
     OR   A                         ; cannot be passed:
     RET  Z                         ; this one can.
-    LD   A,DG_CONST                ; Not-writable,
-    JP   EX_EVAL                   ; at the path.
+    CALL EX_REVAL                  ; Raise the code below at the expression's first token.
+    DB   DG_CONST                  ; not-writable (74); no return.
 
 ;@ROUTINE IN A CLOBBERS A,BC,DE,HL,IX,IY,CARRY,ZERO,SIGN,PARITY,HALFCARRY
 ; A view argument of type A (argument): AG_VIEW for a string, an open
@@ -927,8 +925,7 @@ RO_VIEW:
     JR   Z,.PASS                   ; Its capacity word.
     CALL AG_SCAL                 ; A scalar
     JR   C,RO_EFIT                 ; is no string: DG_CLASH at the path.
-    CALL AG_DESC                   ; HL addresses the descriptor.
-    LD   A,(HL)                    ; Its kind
+    CALL AG_KIND                   ; Its descriptor in HL, its kind in A.
     CP   AG_KSTR                   ; must be a string,
     JR   NZ,RO_EFIT                ; else DG_CLASH at the path.
     INC  HL                        ; Its capacity
@@ -949,8 +946,7 @@ RO_VIEW:
     JR   C,RO_EFIT                 ; a File
     CP   AG_OPEN                   ; or a view
     JR   NC,RO_EFIT                ; is no array: DG_CLASH at the path.
-    CALL AG_DESC                   ; HL addresses the descriptor.
-    LD   A,(HL)                    ; Its kind
+    CALL AG_KIND                   ; Its descriptor in HL, its kind in A.
     CP   AG_KARR                   ; must be an array
     JR   NZ,RO_EFIT                ; (DG_CLASH),
     INC  HL                        ; and its element
@@ -1061,8 +1057,8 @@ RO_FVAL:
     CP   AG_FILE                   ; A File
     RET  Z                         ; is in DEHL, or to be loaded.
 .ETYPE:                        ; Anything else
-    LD   A,DG_CLASH                ; raises DG_CLASH
-    JP   EX_EVAL                   ; at its start.
+    CALL EX_REVAL                  ; Raise the code below at the expression's first token.
+    DB   DG_CLASH                  ; type-mismatch (41); no return.
 .VARIABLE:                     ; A routine's call,
     CALL RO_FIND                   ; its result
     JR   NZ,.PATH                  ; a File

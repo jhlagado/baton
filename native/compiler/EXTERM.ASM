@@ -301,8 +301,8 @@ EX_CONV:                       ; C is the target type.
     OR   A                         ; Clear carry.
     RET                            ; Return it.
 .NONE:                         ; A Boolean on either side:
-    LD   A,DG_NOCVT                ; conversion-unavailable,
-    JP   DG_HERE                   ; at the parenthesis.
+    CALL DG_RHERE                  ; Raise the code below at offset HL.
+    DB   DG_NOCVT                  ; conversion-unavailable (53); no return.
 
 ;@ROUTINE IN A,BC OUT A,D,CARRY CLOBBERS SIGN,PARITY,HALFCARRY,ZERO
 ; Require result metadata A to be an integer; a Boolean raises DG_CLASH
@@ -321,8 +321,8 @@ EX_INT:
 EX_SIGN:                       ; An invalid numeric operand:
     LD   H,B                       ; type-mismatch
     LD   L,C                       ; at
-    LD   A,DG_CLASH                ; the
-    JP   DG_HERE                   ; sign.
+    CALL DG_RHERE                  ; Raise the code below at offset HL.
+    DB   DG_CLASH                  ; type-mismatch (41); no return.
 
 ;@ROUTINE OUT A,HL,CARRY CLOBBERS SIGN,PARITY,HALFCARRY,ZERO,BC,DE,IX,IY
 ; Parse a unary expression: a primary preceded by any number of signs,

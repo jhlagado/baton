@@ -217,8 +217,7 @@ PL_OWORD:                      ; A is a table type.
     RET                            ; it does.
 .KIND:                         ; Not owning:
     LD   A,D                       ; a record's
-    CALL AG_DESC                   ; kind
-    LD   A,(HL)                    ; is
+    CALL AG_KIND                   ; Its descriptor in HL, its kind in A.
     CP   AG_KREC                   ; zero.
     RET                            ; Done.
 
@@ -256,8 +255,8 @@ PL_TYPE:                       ; The NAME is current.
     CALL PL_FIND                   ; A pool?
     LD   C,AG_HID                  ; An identifier,
     JR   C,.MAKE                   ; of it.
-    LD   A,DG_CLASS                ; Not a pool:
-    JP   DG_NAMED                  ; wrong-class, naming it.
+    CALL DG_RNAME                  ; Raise the code below at the current name, naming it.
+    DB   DG_CLASS                  ; wrong-class (30); no return.
 .OWNER:                        ; Not `id P`.
     CALL PL_FIND                   ; A pool?
     RET  NC                        ; No.

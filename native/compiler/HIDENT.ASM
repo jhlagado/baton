@@ -150,8 +150,8 @@ HN_IDEX:                       ; `id` was the token.
     LD   (AC_BOUND),HL             ; in AC_BOUND,
     JP   OW_IDREC                  ; OWNBODY.ASM); return.
 .OWNER:                        ; Anything else is not-owner,
-    LD   A,DG_OWNER                ; at
-    JP   DG_HERE                   ; `id`.
+    CALL DG_RHERE                  ; Raise the code below at offset HL.
+    DB   DG_OWNER                  ; not-owner (106); no return.
 
 ;@ROUTINE IN E CLOBBERS A,BC,DE,HL,IX,IY,CARRY,ZERO,SIGN,PARITY,HALFCARRY
 ; Parse an identifier's value for a location of type E into DEHL
@@ -248,8 +248,8 @@ HN_IDV0:                       ; E is the location's type.
 .CLASH:                        ; Not the location's:
     POP  DE                        ; (the type)
     POP  HL                        ; type-mismatch
-    LD   A,DG_CLASH                ; at the
-    JP   DG_HERE                   ; value.
+    CALL DG_RHERE                  ; Raise the code below at offset HL.
+    DB   DG_CLASH                  ; type-mismatch (41); no return.
 .FIT:                          ; It fits.
     POP  DE                        ; (dropped)
     POP  HL                        ; (dropped)
@@ -416,8 +416,8 @@ HN_MPOS:                       ; A the phrase, HL the offset.
 .FOUND:                        ; HL is the phrase:
     LD   (DG_ARG1),HL              ; argument 1.
     POP  HL                        ; At the offset,
-    LD   A,DG_MPOS                 ; move-position;
-    JP   DG_HERE                   ; no return.
+    CALL DG_RHERE                  ; Raise the code below at offset HL.
+    DB   DG_MPOS                   ; move-position (115); no return.
 
 ;@ROUTINE IN C,DE OUT A,HL,CARRY CLOBBERS SIGN,PARITY,HALFCARRY,ZERO,BC,DE,IX,IY
 ; Run the parse at DE where no move may be, phrase C (HN_NOMV), as the
@@ -629,8 +629,7 @@ HN_ARRAY:                      ; A is the type.
     JR   NC,.NOT                   ; open arrays?
     PUSH HL                        ; Keep HL
     PUSH DE                        ; and DE.
-    CALL AG_DESC                   ; Its
-    LD   A,(HL)                    ; kind
+    CALL AG_KIND                   ; Its descriptor in HL, its kind in A.
     POP  DE                        ; (DE
     POP  HL                        ; and HL again)
     CP   AG_KARR                   ; an array's?

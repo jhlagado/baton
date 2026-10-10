@@ -603,8 +603,8 @@ TK_QESC:                       ; The backslash is consumed; the escape follows.
     DJNZ .LOOP                     ; Until the table is exhausted.
 .BAD:                          ; An unknown or incomplete escape:
     POP  HL                        ; bad-escape,
-    LD   A,DG_ESC                  ; at the
-    JP   DG_HERE                   ; backslash.
+    CALL DG_RHERE                  ; Raise the code below at offset HL.
+    DB   DG_ESC                    ; bad-escape (5); no return.
 .HEX:                          ; Exactly two digits must follow.
     LD   B,2                       ; B counts them.
 .DIGIT:                        ; B digits remain.
@@ -876,8 +876,8 @@ TK_ATEND:                      ; SRC_PEEK reported the end of the part.
     AND  $7F                       ; offset
     LD   H,A                       ; less its
     LD   L,E                       ; kind.
-    LD   A,DG_AJAR                 ; Raise it
-    JP   DG_HERE                   ; there.
+    CALL DG_RHERE                  ; Raise the code below at offset HL.
+    DB   DG_AJAR                   ; open-delimiter (11); no return.
 .CLOSED:                       ; None is open.
     LD   A,(DG_MODE)               ; While DIAG reads the parts
     CP   2                         ; after a fault, each ends

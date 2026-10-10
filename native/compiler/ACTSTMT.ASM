@@ -218,8 +218,8 @@ AC_INFER:
     DEC  A                         ; a character literal alone,
     LD   A,SY_U8                   ; which is a u8;
     JR   Z,.DECLARE                ; otherwise
-    LD   A,DG_INFER                ; no-definite-type,
-    JP   EX_EVAL                   ; at it.
+    CALL EX_REVAL                  ; Raise the code below at the expression's first token.
+    DB   DG_INFER                  ; no-definite-type (44); no return.
 .DECLARE:                      ; A is the local's type.
     LD   (AG_CTYPE),A              ; It is the declaration's.
     JP   AC_LOCAL                  ; Declare the local; return.

@@ -287,8 +287,8 @@ CT_LOOP:
 CT_GUARD:
     CALL CT_COUNT                  ; Carry if the local counts a loop.
     RET  NC                        ; It doesn't.
-    LD   A,DG_CONST                ; not-writable,
-    JP   DG_NAMED                  ; naming it.
+    CALL DG_RNAME                  ; Raise the code below at the current name, naming it.
+    DB   DG_CONST                  ; not-writable (74); no return.
 
 ;@ROUTINE IN BC OUT CARRY CLOBBERS A,DE,HL,ZERO,SIGN,PARITY,HALFCARRY
 ; Carry if the local at offset BC from IX is the counter of an open for

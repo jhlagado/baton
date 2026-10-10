@@ -51,8 +51,8 @@ RO_ASGN:                       ; A is the path's type.
     CALL HN_RSET                   ; An identifier's slot to recheck.
     CALL AG_ISVW                   ; A view as a whole
     JR   NC,.KIND                  ; is not writable:
-    LD   A,DG_CONST                ; not-writable,
-    JP   EX_EVAL                   ; at its start.
+    CALL EX_REVAL                  ; Raise the code below at the expression's first token.
+    DB   DG_CONST                  ; not-writable (74); no return.
 .KIND:                         ; A is the target's type.
     CALL PL_ISHND                  ; A handle takes
     JP   C,HN_LET                  ; an owning value.
@@ -86,8 +86,7 @@ RO_ASGN:                       ; A is the path's type.
 .TEXT:                         ; A literal into a string.
     POP  AF                        ; The target's type.
     PUSH AF                        ; Kept.
-    CALL AG_DESC                   ; HL addresses the descriptor.
-    LD   A,(HL)                    ; Its kind
+    CALL AG_KIND                   ; Its descriptor in HL, its kind in A.
     CP   AG_KSTR                   ; must be a string,
     JP   NZ,EX_ETYPE               ; else DG_CLASH.
     INC  HL                        ; Its capacity.

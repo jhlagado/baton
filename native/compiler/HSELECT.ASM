@@ -155,8 +155,8 @@ HN_MOVE:                       ; `move` is next:
     XOR  A                         ; and is no owner.
     JR   .SCALAR                   ; (not-owner)
 .CLASS:                        ; Not a variable:
-    LD   A,DG_CLASS                ; wrong-class,
-    JP   DG_NAMED                  ; naming it.
+    CALL DG_RNAME                  ; Raise the code below at the current name, naming it.
+    DB   DG_CLASS                  ; wrong-class (30); no return.
 
 ;@ROUTINE CLOBBERS A,BC,DE,HL,CARRY,ZERO,SIGN,PARITY,HALFCARRY
 ; Move the owning handle at the path in hand into HL, leaving none

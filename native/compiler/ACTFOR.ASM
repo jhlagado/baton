@@ -229,8 +229,8 @@ AC_STEP:
     CP   SY_F32                    ; it is
     JR   NZ,.LONG                  ; an f32.
 .MIXED:                        ; Neither, or f32:
-    LD   A,DG_MIXED                ; mixed-operands,
-    JP   EX_EVAL                   ; at the bound.
+    CALL EX_REVAL                  ; Raise the code below at the expression's first token.
+    DB   DG_MIXED                  ; mixed-operands (70); no return.
 .LONG:                         ; E is the common type.
     LD   A,(AC_MODE)               ; A long counter
     AND  CT_MLONG                  ; takes

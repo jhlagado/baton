@@ -141,6 +141,16 @@ DG_RNAME:
     LD   A,(HL)                    ; Fetch the diagnostic's code.
     JR   DG_NAMED                  ; Name it, record it and abandon the build.
 
+;@ROUTINE IN HL NORETURN
+; Raise the diagnostic whose code is the byte after the CALL at offset HL
+; of the current part, as DG_HERE does: `CALL DG_RHERE` then `DB code`.
+
+DG_RHERE:                      ; HL is the offset; the code follows the CALL.
+    EX   (SP),HL                   ; HL addresses the code; the offset is stacked.
+    LD   A,(HL)                    ; Fetch the diagnostic's code.
+    POP  HL                        ; HL is the offset again.
+    JR   DG_HERE                   ; Record it there and abandon the build.
+
 ;@ROUTINE IN A,HL CLOBBERS BC,DE,HL,CARRY,ZERO,SIGN,PARITY,HALFCARRY
 ; Make argument 1 the name at offset HL of the current part, its letters,
 ; digits and underscores, through TK_PTR and TK_LEN (DG_SETN); with none

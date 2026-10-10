@@ -315,8 +315,8 @@ AC_SIG:
     ADD  HL,DE                     ; a forward still open
     BIT  2,(HL)                    ; (RO_FOPEN)
     JP   Z,EX_EDUP                 ; is completed by `sub NAME` alone;
-    LD   A,DG_FWDNO                ; another, a duplicate.
-    JP   DG_NAMED                  ; Raise it, named.
+    CALL DG_RNAME                  ; Raise the code below at the current name, naming it.
+    DB   DG_FWDNO                  ; forward-mismatch (32); no return.
 
 ;@ROUTINE OUT A,CARRY,ZERO CLOBBERS SIGN,PARITY,HALFCARRY,BC,DE,HL,IX
 ; BeginForward: build the signature as AC_SIG does and mark it forward and
