@@ -1,0 +1,32 @@
+// Open arrays of optional owning handles: read, selected and filled through var. (open-array descriptors)
+record Node
+    v: u8
+end
+pool nodes: Node[4]
+
+sub count(items: nodes?[]): u8
+    var n: u8 = 0
+    var i: u16
+    for i = 0 until items.length
+        select items[i]
+        case some(x)
+            n = n + x.v
+        case none
+        end
+    end
+    return n
+end
+
+sub fill(var items: nodes?[])
+    items[0] = new nodes(5)
+    items[1] = none
+end
+
+sub main() fails IoError
+    var a: nodes?[3]
+    fill(var a)
+    a[2] = new nodes(7)
+    if count(a) = 12
+        try writeText(console, "ok\r\n")
+    end
+end

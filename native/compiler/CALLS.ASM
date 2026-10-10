@@ -155,9 +155,9 @@ RO_NAMED:
     JR   NZ,.WRITE                 ; Then writable.
     INC  E                         ; Another is read-only.
     JR   .ALIAS                    ; An alias.
-.WRITE:                        ; A var parameter: a record's
-    CP   AG_OPEN                   ; owner word
-    JR   NC,.ALIAS                 ; (no view is a record)
+.WRITE:                        ; A var parameter: a record's owner word
+    CP   AG_FIRST+AG_TCAP          ; follows its address; a type outside the
+    JR   NC,.ALIAS                 ; table (a string view) has none.
     PUSH HL                        ; follows
     PUSH DE                        ; its address
     CALL PL_OWORD                  ; word, as an owning array's.
@@ -249,9 +249,9 @@ RO_PATH:
     JR   Z,.NONE                   ; (no-such-field).
     CP   AG_VIEW                   ; An open string?
     JR   Z,.STRING                 ; Its length or capacity.
-    CP   AG_OPEN                   ; An open array?
-    JR   NC,.OPEN                  ; Its length.
     CALL AG_KIND                   ; Its descriptor in HL, its kind in A.
+    CP   AG_KOPEN                  ; An open array?
+    JR   Z,.OPEN                   ; Its length.
     CP   AG_KREC                   ; A record?
     JR   Z,RO_FIELD                ; Find the field.
     CP   AG_KSTR                   ; A string?
@@ -381,8 +381,6 @@ RO_INDEX:
     LD   C,2                       ; Bit 1 of RO_PPUSH: a string.
     CP   AG_VIEW                   ; An open string
     JR   Z,.BASE                   ; is one.
-    CP   AG_OPEN                   ; An open array
-    JR   NC,.ARRAY                 ; is not.
     CALL AG_KIND                   ; Its descriptor in HL, its kind in A.
     CP   AG_KREC                   ; a record
     JR   Z,.NOINDEX                ; cannot be indexed;
@@ -422,9 +420,9 @@ RO_INDEX:
     LD   A,(RO_PPUSH)              ; A string's characters
     AND  2                         ; are checked against its length
     JP   NZ,GA_CHAR                ; at run time,
-    LD   A,(RO_OTYPE)              ; as are
-    CP   AG_OPEN                   ; an open array's
-    JP   NC,HN_ITEM                ; elements.
+    LD   A,(RO_OTYPE)              ; An open array's elements
+    CALL AG_ISOA                   ; are checked against its length
+    JP   C,HN_ITEM                 ; at run time too.
     BIT  7,D                       ; SY_KNOWN: a constant index?
     JP   Z,HN_ITEM                 ; No: checked at run time too.
     PUSH HL                        ; Keep it.
@@ -609,8 +607,11 @@ RO_ARGS:
     AND  $7F                       ; Without AG_VAR:
     CP   AG_FILE                   ; a File?
     JR   Z,.FILE                   ; Its value is passed.
-    CP   AG_OPEN                   ; Below the views,
-    JR   C,.ADDRESS                ; an aggregate's address.
+    CP   AG_FIRST+AG_TCAP          ; A type outside the table is a view
+    JR   NC,.VIEW                  ; (a string view, the services' u8[]);
+    CALL AG_ISOA                   ; a table type is one if an open array,
+    JR   NC,.ADDRESS               ; else an aggregate, passed by address.
+.VIEW:                         ; B is the view's type.
     LD   A,B                       ; A view:
     CALL RO_VIEW                   ; its word is pushed.
     JP   .PUSH                     ; Then the address.
@@ -875,7 +876,7 @@ RO_WRITE:
 
 ;@ROUTINE IN A CLOBBERS A,BC,DE,HL,IX,IY,CARRY,ZERO,SIGN,PARITY,HALFCARRY
 ; A view argument of type A (argument): AG_VIEW for a string, an open
-; array's ID (AG_OPEN plus its element's) or AG_BUF, the services' u8[],
+; array's type (AG_KOPEN, AG_ISOA) or AG_BUF, the services' u8[],
 ; each with AG_VAR for var. A string literal, for a string[]
 ; that is not var: LD DE,its length, PUSH DE, LD HL,literal. Otherwise a
 ; path, rooted at a variable or constant (not a call), and writable for a
@@ -909,7 +910,7 @@ RO_VIEW:
 .PATH:                         ; A path names the object.
     CALL RO_NAME                   ; Its root's name.
     CALL RO_FIND                   ; A routine
-    JR   Z,.CLASS                  ; is no variable: wrong-class.
+    JP   Z,.CLASS                  ; is no variable: wrong-class.
     CALL RO_NAMED                  ; Parse the path; A is its type.
     POP  BC                        ; B is the view's type.
     CALL HN_ARGCK                  ; (not through an identifier)
@@ -933,26 +934,38 @@ RO_VIEW:
     LD   H,0                       ; HL.
     JR   .WORD                     ; Pass it.
 .BUFFER:                       ; A is the path's type, B the view's.
-    LD   E,A                       ; Keep it.
-    LD   A,B                       ; The services' u8[]
-    CP   AG_BUF                    ; is
-    JR   NZ,.OPEN                  ; an open
-    LD   B,AG_OPEN+SY_U8           ; array of u8.
-.OPEN:                         ; B is an open array's ID.
+    LD   E,A                       ; Keep the path's type in E.
+    LD   C,SY_U8                   ; The services' u8[] has u8 elements;
+    LD   A,B                       ; is the view
+    CP   AG_BUF                    ; that one?
+    JR   Z,.ELEM                   ; Then C is its element type.
+    PUSH DE                        ; Keep the path's type across the lookup.
+    CALL AG_DESC                   ; HL addresses the open array's descriptor;
+    INC  HL                        ; its second byte
+    LD   C,(HL)                    ; is the element type, into C.
+    POP  DE                        ; E is the path's type again.
+.ELEM:                         ; C is the view's element type.
     LD   A,E                       ; The path's type:
     CP   B                         ; the same open array
     JR   Z,.PASS                   ; passes its word on;
-    CALL AG_SCAL                 ; a scalar,
-    JR   C,RO_EFIT                 ; a File
-    CP   AG_OPEN                   ; or a view
-    JR   NC,RO_EFIT                ; is no array: DG_CLASH at the path.
+    CALL AG_SCAL                   ; a scalar
+    JR   C,RO_EFIT                 ; is no array: DG_CLASH at the path.
+    CP   AG_FIRST+AG_TCAP          ; A type outside the table (File, handle,
+    JR   NC,RO_EFIT                ; view) is no array either.
     CALL AG_KIND                   ; Its descriptor in HL, its kind in A.
-    CP   AG_KARR                   ; must be an array
-    JR   NZ,RO_EFIT                ; (DG_CLASH),
-    INC  HL                        ; and its element
-    LD   A,B                       ; the view's
-    SUB  AG_OPEN                   ; element
-    CP   (HL)                      ; type (DG_CLASH).
+    CP   AG_KOPEN                  ; An open array, passed on to the services'
+    JR   NZ,.FIXED                 ; u8[], passes its word on if its element
+    INC  HL                        ; type, the descriptor's next byte,
+    LD   A,C                       ; is the view's;
+    CP   (HL)                      ; compare them:
+    JR   Z,.PASS                   ; the same: pass it on;
+    JR   RO_EFIT                   ; another: DG_CLASH at the path.
+.FIXED:                        ; A is the path's kind.
+    CP   AG_KARR                   ; It must be an array
+    JR   NZ,RO_EFIT                ; (DG_CLASH otherwise),
+    INC  HL                        ; and its element type, the next byte,
+    LD   A,C                       ; must be
+    CP   (HL)                      ; the view's (DG_CLASH otherwise).
     JR   NZ,RO_EFIT                ; Its length
     INC  HL                        ; is
     LD   E,(HL)                    ; the

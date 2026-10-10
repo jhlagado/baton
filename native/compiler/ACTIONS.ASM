@@ -288,8 +288,9 @@ AC_DIM:
 ; of its bound's elements of the current type, interned and made current.
 ; The element may not be a view (DG_CLASH); the
 ; extent must fit 64K (out-of-range). Then an open outermost
-; dimension makes the type an open array of them, AG_OPEN plus the
-; element's ID. Nothing is done without dimensions.
+; dimension makes the type an open array of them: an interned descriptor
+; of kind AG_KOPEN holding the element's type. Nothing is done without
+; dimensions.
 
 AC_ARRAY:
     LD   HL,AG_DCNT                ; Any bounds
@@ -327,20 +328,19 @@ AC_ARRAY:
     CALL PL_AMARK                  ; Owning, if its element owns.
     JR   AC_ARRAY                  ; The next dimension out.
 .OPEN:                         ; Every bound is built.
-    LD   HL,AG_OPENF               ; Was the outermost open?
-    OR   (HL)                      ; (A is zero.)
+    LD   HL,AG_OPENF               ; Was the outermost dimension open, `[]`?
+    OR   (HL)                      ; A is zero, so this tests the flag.
     RET  Z                         ; No: the type is complete.
-    LD   (HL),0                    ; Yes, this once:
-    CALL AC_ITEM                   ; the element type,
-    CP   AG_FILE                   ; a File's
-    JP   Z,TR_OPER                 ; waiting (DG_NYI), and a handle's,
-    CALL PL_ISHND                  ; whose IDs an open array's cannot
-    JP   C,TR_OPER                 ; hold (AG_HND), waiting too,
-    CP   AG_OLIM-AG_OPEN           ; one an open array's ID can hold
-    JP   NC,AG_EMETA               ; (DG_META, types, beyond),
-    ADD  A,AG_OPEN                 ; makes the open array's ID,
-    LD   (AG_CTYPE),A              ; the current type.
-    RET                            ; Back to the engine.
+    LD   (HL),0                    ; Yes: clear the flag for the next type.
+    CALL AC_ITEM                   ; A is the element type (not a view).
+    LD   (AG_NAUX),A               ; The candidate's element type.
+    LD   A,AG_KOPEN                ; The candidate's kind
+    LD   (AG_NKIND),A              ; is an open array's.
+    LD   HL,0                      ; An open array has no count of its own
+    LD   (AG_NDIM),HL              ; (the argument's length is passed).
+    LD   L,4                       ; As an argument it takes four bytes,
+    LD   (AG_NSIZE),HL             ; its address and its length.
+    JP   AC_REUSE                  ; Intern it and make it current; return.
 
 ;@ROUTINE OUT A,CARRY,ZERO CLOBBERS SIGN,PARITY,HALFCARRY
 ; The current type (AG_CTYPE) as an element, a field or a result: not a

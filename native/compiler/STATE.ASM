@@ -270,7 +270,7 @@ AG_STEND EQU  AG_CWIDE+1       ; End of the aggregate scalars.
 ; shape and compared or copied as a block.
 AG_TTAB EQU  AG_STEND          ; First type descriptor.
 AG_TLEN EQU  4                 ; Bytes in one descriptor.
-AG_TCAP EQU  48                ; Descriptors, IDs below AG_OPEN; DG_META when exceeded.
+AG_TCAP EQU  48                ; Descriptors; DG_META when exceeded.
 AG_TLIM EQU  AG_TTAB+AG_TLEN*AG_TCAP ; Exclusive end of the type table.
 AG_TKIND EQU  0                ; Descriptor field: AG_KREC, KSTR or KARR.
 AG_TAUX EQU  1                 ; Descriptor field: element type or capacity.
@@ -583,6 +583,7 @@ AG_KREC EQU  4                 ; Descriptor kind: record.
 AG_KSTR EQU  5                 ; Descriptor kind: bounded string.
 AG_KENUM EQU  7               ; Nominal byte enum: count and member-list head.
 AG_KARR EQU  6                 ; Descriptor kind: array.
+AG_KOPEN EQU  8                ; Descriptor kind: open array, T[] (a parameter's); +1 its element.
 ; Types outside the type table, so outside its compact ordinals. A File
 ; is four bytes, held as a value as the reference's is: a program variable,
 ; local, parameter, field, element or result. The views are parameter
@@ -591,11 +592,10 @@ AG_KARR EQU  6                 ; Descriptor kind: array.
 AG_FILE EQU  $79               ; Type ID of File.
 AG_BUF EQU  $7A                ; Type ID of a u8[] parameter (services).
 AG_VIEW EQU  $7C               ; Type ID of an open string parameter.
-; An open array, T[], a parameter type only, is AG_OPEN plus its element's
-; ID, $41 to $67. A parameter's type, a routine's or a service's, has bit
-; 7 (AG_VAR) set for a var parameter.
-AG_OPEN EQU  $40               ; Type ID of an open array of no element.
-AG_OLIM EQU  $68               ; Exclusive end of the open arrays' IDs.
+; An open array, T[], a parameter type only, is a table type of kind
+; AG_KOPEN whose descriptor holds its element's type (AG_ISOA). A
+; parameter's type, a routine's or a service's, has bit 7 (AG_VAR) set for
+; a var parameter.
 ; A handle type is AG_HND plus four times its pool's index (POOLS.ASM)
 ; plus its form: AG_HOPT for P? and AG_HID for id P, both for id P?. An
 ; owning handle is two bytes, an identifier four: its slot and generation.

@@ -319,8 +319,12 @@ it does not silently reduce the accepted scope to parameters only.
 
 ### Open-array descriptor correction
 
+Implemented 2026-10-11 (development plan §4): open arrays are interned descriptors of
+kind `AG_KOPEN`, and open arrays of handles, identifiers and `File`s compile natively.
+The text below is the acceptance record.
+
 Accepted for the next milestone as compatibility and capacity work, before dependent slice
-and array extensions. It remains deferred from current 0.1 toolchain completion. It corrects the representation of an existing language
+and array extensions. It corrects the representation of an existing language
 facility. It is not speculative syntax, generics or an optional capability.
 Complete the current 0.1 toolchain completion contract first, then address this correction
 before dependent extensions. No implementation is scheduled yet.

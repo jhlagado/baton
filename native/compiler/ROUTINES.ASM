@@ -31,8 +31,8 @@
 ;  name heap once the signature is complete (AC_PUB), as many as fit.
 ;
 ;  A parameter's record, five bytes, holds the spelling's address and
-;  length, then the type, AG_VIEW for an open string, AG_OPEN plus the
-;  element's for an open array, with AG_VAR for a var parameter, then
+;  length, then the type (AG_VIEW for an open string, an AG_KOPEN table
+;  type for an open array), with AG_VAR for a var parameter, then
 ;  whether the result's from clause names it. A routine's parameters are
 ;  consecutive records from RO_RPIDX; the signature being parsed has up to
 ;  64.
@@ -270,11 +270,11 @@ RO_WORDS:
     OR   A                         ; word
     JP   P,.WORD                   ; follows
     JR   .DONE                     ; its address; or
-.NOTH:                         ; not a handle:
-    CP   AG_OLIM                   ; (past the open arrays
-    JR   NC,.WORD                  ; one word)
-    CP   AG_OPEN                   ; an open
-    JR   NC,.DONE                  ; array.
+.NOTH:                         ; Not a handle:
+    CP   AG_FIRST+AG_TCAP          ; a type outside the table
+    JR   NC,.WORD                  ; takes one word;
+    CALL AG_ISOA                   ; an open array takes two,
+    JR   C,.DONE                   ; its address and its length.
 .TABLE:                        ; A record, array or string:
     POP  AF                        ; the type
     PUSH AF                        ; with

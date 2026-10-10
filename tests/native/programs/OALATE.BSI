@@ -1,0 +1,23 @@
+// Open arrays of u16 and of a record declared after a routine. (open-array descriptors)
+sub sum(xs: u16[]): u16
+    var s: u16 = 0
+    var i: u16
+    for i = 0 until xs.length
+        s = s + xs[i]
+    end
+    return s
+end
+record Late
+    a: u8
+end
+sub lates(ls: Late[]): u8
+    return ls[0].a
+end
+sub main() fails IoError
+    var xs: u16[3] = [1, 2, 3]
+    var ls: Late[1]
+    ls[0].a = 4
+    if sum(xs) = 6 and lates(ls) = 4
+        try writeText(console, "ok\r\n")
+    end
+end

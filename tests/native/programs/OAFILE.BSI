@@ -1,0 +1,15 @@
+// An open array of Files, each written through. (open-array descriptors)
+sub close2(files: File[]) fails IoError
+    var i: u16
+    for i = 0 until files.length
+        try writeText(files[i], "x")
+    end
+end
+
+sub main() fails IoError
+    var fs: File[2]
+    fs[0] = console
+    fs[1] = console
+    try close2(fs)
+    try writeText(console, "\r\n")
+end

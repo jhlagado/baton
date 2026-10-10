@@ -47,6 +47,13 @@ const accepted = [
     source: openArraySource(23),
     output: "V\r\n",
   },
+  // Open arrays are table types of their own (the descriptor correction),
+  // so an element's ID no longer bounds them.
+  {
+    name: "ENOPEN40",
+    source: openArraySource(24),
+    output: "V\r\n",
+  },
   {
     name: "ENUMPRIV",
     source: Deno.readTextFileSync("tests/conformance/enums/private-parts.bsi"),
@@ -329,36 +336,6 @@ Deno.test("plain enums native: 48 declared types exceed the shared descriptor ca
 function assertMatchCapacity(output: string) {
   assert(/^ENUM49\.BSI \d+:\d+: 190: .*\r\n$/.test(output), output);
 }
-
-Deno.test("plain enums reference: open-array enum ID40 runs", async () => {
-  const reference = await compile("ENOPEN40.BSI", {
-    mainSource: encoder.encode(openArraySource(24)),
-  });
-  assert(reference.ok, JSON.stringify(reference));
-  assertEquals(runCom(reference.com, { maxSteps: 5_000_000 }).output, "V\r\n");
-});
-
-Deno.test("plain enums native: open-array enum ID40 reaches encoding capacity", async () => {
-  const { compiler, runtime } = await native();
-  const source = encoder.encode(openArraySource(24));
-  const reference = await compile("ENOPEN40.BSI", { mainSource: source });
-  assert(reference.ok, JSON.stringify(reference));
-  const compiled = runCom(compiler.com, {
-    tail: "ENOPEN40 [C]",
-    files: {
-      "ENOPEN40.BSI": source,
-      "BASIE.OVL": compiler.ovl,
-      "BASIE.MSG": messageFile(),
-      "CPM22.BRL": runtime,
-    },
-    maxSteps: 100_000_000,
-  });
-  assert(
-    /^ENOPEN40\.BSI \d+:\d+: 190: .*\r\n$/.test(compiled.output),
-    compiled.output,
-  );
-  assertEquals(compiled.disk.has("ENOPEN40.COM"), false);
-});
 
 // Build lazily so --filter 'plain enums reference' exercises the reference
 // before the native implementation exists, without assembling the native one.

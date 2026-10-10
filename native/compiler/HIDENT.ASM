@@ -145,8 +145,8 @@ HN_IDEX:                       ; `id` was the token.
 .NOT:                          ; Not an owner:
     CP   AG_FIRST                  ; a record's
     JR   C,.OWNER                  ; identifier
-    CP   AG_OPEN                   ; (OW_IDREC,
-    JR   NC,.OWNER                 ; `id` staged
+    CALL AG_ISOA                   ; (not an open array, nor outside
+    JR   C,.OWNER                  ; the table: OW_IDREC, `id` staged
     LD   (AC_BOUND),HL             ; in AC_BOUND,
     JP   OW_IDREC                  ; OWNBODY.ASM); return.
 .OWNER:                        ; Anything else is not-owner,
@@ -625,8 +625,8 @@ HN_DESC:                       ; A is a table type.
 HN_ARRAY:                      ; A is the type.
     CP   AG_FIRST                  ; A table
     JR   C,.NOT                    ; type,
-    CP   AG_OPEN                   ; below the
-    JR   NC,.NOT                   ; open arrays?
+    CP   AG_FIRST+AG_TCAP          ; Past the table's IDs:
+    JR   NC,.NOT                   ; no table type.
     PUSH HL                        ; Keep HL
     PUSH DE                        ; and DE.
     CALL AG_KIND                   ; Its descriptor in HL, its kind in A.

@@ -32,7 +32,7 @@ programs in the stress test rather than 40.
 | The conformance corpus (`conformance_test.ts`, `conformance_triptych_test.ts`) | 6 | 176 programs run on the reference toolchain with their recorded results, 108 of them on real CP/M 2.2. The native compiler also builds and links the enum fixture under that operating system. |
 | The reference toolchain | the rest | The lexer, grammar, source loader, object formats, linker, helper table, `f32` constants, messages and publishing. |
 
-The whole suite, 1,124 tests, passes. Every program of the conformance corpus, the examples, the native test programs and the library that the reference compiles, 250 in all, compiles natively too (a sweep, `tools/_sweep.ts`, at 74.20); the constructs the native compiler still refuses (Error 191) are those the reference refuses too, with another diagnostic, and the open arrays of handles and of `File`s, which wait for version 2 ([limits](limits.md)).
+The whole suite, 1,124 tests, passes. Every program of the conformance corpus, the examples, the native test programs and the library that the reference compiles, 250 in all, compiles natively too (a sweep, `tools/_sweep.ts`, at 74.20); the constructs the native compiler still refuses (Error 191) are those the reference refuses too, with another diagnostic. The open arrays of handles and of `File`s, which waited for the open-array descriptor correction, compile natively since it (§9).
 
 ## 3. Large programs and stress tests
 
@@ -227,3 +227,19 @@ compiler's diagnostics:
 409 below the 28 KiB limit. Programs that failed as the last operand of an
 expression now handle the failure, and tests that printed failure codes as
 numbers print member names through the library's new `appendIoError`.
+
+## 9. Open-array descriptors (tier 2)
+
+An open array, `T[]`, was a type ID computed as `AG_OPEN` plus its element's
+ID, which bounded elements to IDs below `$28`: open arrays of handles,
+identifiers and `File`s waited (Error 191), and late-declared element types
+could exceed the encoding. It is now an interned table type of kind
+`AG_KOPEN` whose descriptor's second byte is the element type, and the
+ID-range tests became kind tests (`AG_ISOA`, `AG_ISVW`). An open `u8[]`
+passed on to a service's `u8[]` matches by element. Each distinct open-array
+type takes one of the 48 type slots.
+
+Five programs (`OAHAND`, `OAFILE`, `OAID`, `OALATE`, `OAENUM`) compile to the
+reference's streams, and the enum open array at ID 40, which met the old
+encoding's capacity, now compiles, links and runs. The change costs 34
+resident bytes.

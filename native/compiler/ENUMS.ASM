@@ -5,27 +5,51 @@
 EN_HEAD EQU AG_IBUF            ; Word: newest member.
 EN_COUNT EQU AG_IBUF+2         ; Word: members seen, 1..256.
 
-; A kept; carry iff a built-in scalar or a nominal enum. BC,DE,HL kept.
-AG_SCAL:
-    CP   AG_FIRST
-    RET  C
-    CP   AG_FIRST+AG_TCAP
-    JR   NC,.OTHER
-    PUSH BC
-    PUSH DE
-    PUSH HL
-    LD   C,A
-    CALL AG_KIND                   ; Its descriptor in HL, its kind in A.
-    CP   AG_KENUM
-    LD   A,C
-    POP  HL
-    POP  DE
-    POP  BC
-    SCF
-    RET  Z
-.OTHER:
-    OR   A
-    RET
+;@ROUTINE IN A OUT CARRY CLOBBERS ZERO,SIGN,PARITY,HALFCARRY
+; Carry when type A is a built-in scalar or a nominal enum, a byte scalar.
+; A, BC, DE and HL are kept.
+
+AG_SCAL:                       ; A is the type.
+    CP   AG_FIRST                  ; Below AG_FIRST, a built-in scalar:
+    RET  C                         ; carry.
+    PUSH BC                        ; Keep BC; AG_ISK pops it.
+    LD   C,AG_KENUM                ; Otherwise it must be an enum's table type.
+    JR   AG_ISK                    ; Test the descriptor's kind.
+
+;@ROUTINE IN A OUT CARRY CLOBBERS ZERO,SIGN,PARITY,HALFCARRY
+; Carry when type A is an open array, T[], a table type of kind AG_KOPEN.
+; A, BC, DE and HL are kept.
+
+AG_ISOA:                       ; A is the type.
+    PUSH BC                        ; Keep BC; AG_ISK pops it.
+    LD   C,AG_KOPEN                ; The kind sought: an open array's.
+
+;@ROUTINE IN A,C OUT CARRY CLOBBERS ZERO,SIGN,PARITY,HALFCARRY
+; Carry when type A is a table type whose descriptor's kind is C. The
+; caller has pushed BC, which is popped here. A, DE and HL are kept.
+
+AG_ISK:                        ; BC is on the stack; C is the kind.
+    CP   AG_FIRST                  ; Below the table's first ID:
+    JR   C,.NO                     ; no table type.
+    CP   AG_FIRST+AG_TCAP          ; At or past its last ID:
+    JR   NC,.NO                    ; no table type either.
+    PUSH DE                        ; Keep DE
+    PUSH HL                        ; and HL across the lookup.
+    LD   B,A                       ; Keep the type in B.
+    CALL AG_KIND                   ; A is the descriptor's kind.
+    CP   C                         ; Is it the kind sought?
+    LD   A,B                       ; Restore the type.
+    POP  HL                        ; Restore HL
+    POP  DE                        ; and DE.
+    POP  BC                        ; Restore BC.
+    SCF                            ; Carry
+    RET  Z                         ; if the kind matched.
+    OR   A                         ; Otherwise clear carry
+    RET                            ; and return.
+.NO:                           ; Not a table type:
+    POP  BC                        ; restore BC,
+    OR   A                         ; clear carry
+    RET                            ; and return.
 
 ; A full type and D storage class -> D packed symbol information.
 ; BC,E,HL kept. Parameter flags are meaningful only for aggregates.

@@ -21,10 +21,9 @@
 ;
 ;  Type IDs are one byte. IDs 1..8 are the scalars, the SY_ type codes
 ;  (STATE.ASM): u8, u16, Boolean, i8, i16, u32, i32 and f32; IDs from AG_FIRST
-;  index the type table AG_TTAB, 48 four-byte descriptors (AG_TCAP),
-;  IDs below the open arrays' (AG_OPEN):
+;  index the type table AG_TTAB, 48 four-byte descriptors (AG_TCAP):
 ;
-;    +0  byte  kind: AG_KREC, AG_KSTR or AG_KARR
+;    +0  byte  kind: AG_KREC, AG_KSTR, AG_KARR, AG_KENUM or AG_KOPEN
 ;    +1  byte  record ordinal, string capacity or array element type
 ;    +2  word  zero for a record, the string capacity or the element count
 ;
@@ -121,14 +120,10 @@ AG_DESC:
 ; parameter type only. A is kept.
 
 AG_ISVW:                       ; A is the type.
-    CP   AG_VIEW                   ; An open string
-    SCF                            ; is
-    RET  Z                         ; one;
-    CP   AG_OPEN                   ; below the open arrays
-    CCF                            ; nothing
-    RET  NC                        ; is,
-    CP   AG_OLIM                   ; nor above them.
-    RET                            ; Carry for an open array.
+    CP   AG_VIEW                   ; An open string is a view:
+    SCF                            ; carry
+    RET  Z                         ; for it.
+    JP   AG_ISOA                   ; Otherwise carry only for an open array.
 
 ;@ROUTINE IN A OUT A,HL CLOBBERS CARRY,ZERO,SIGN,PARITY,HALFCARRY,DE
 ; Address the extent word of dynamic type ID A in HL. A returns twice the

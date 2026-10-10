@@ -1,0 +1,14 @@
+// An open array of an enum. (open-array descriptors)
+enum Dir
+    n
+    e
+end
+sub pick(ds: Dir[]): Dir
+    return ds[1]
+end
+sub main() fails IoError
+    var ds: Dir[2] = [Dir.n, Dir.e]
+    if pick(ds) = Dir.e
+        try writeText(console, "ok\r\n")
+    end
+end

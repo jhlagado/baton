@@ -132,8 +132,11 @@ slice and array extensions. It remains deferred from current 0.1 completion.
 It concerns an existing facility rather than optional syntax or generics. Preserve address/extent calls and ownership, view and lease
 rules. Complete the current 0.1 toolchain completion contract first, then verify this
 correction before extensions that depend on the affected element types.
-The older 150–250 byte estimate across about 20 ID-range tests is unmeasured.
-Implementation of this correction has not yet been requested.
+Implemented 2026-10-11: an open array is an interned table type of kind
+`AG_KOPEN` whose descriptor holds its element's type, so its elements may be
+handles, identifiers, `File`s or any table type; the ID-range tests became kind
+tests (`AG_ISOA`). Measured at 34 resident bytes, against the older 150–250
+byte estimate; each distinct open-array type now takes one of the 48 type slots.
 
 ## 5. Evaluation and admission
 

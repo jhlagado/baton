@@ -1,0 +1,21 @@
+// An open array of identifiers, one returned. (open-array descriptors)
+record Node
+    v: u8
+end
+pool nodes: Node[4]
+
+sub first(ids: id nodes?[]): id nodes?
+    return ids[0]
+end
+
+sub main() fails IoError
+    var n = new nodes(3)
+    var ids: id nodes?[2]
+    ids[0] = id(n)
+    select first(ids)
+    case some(x)
+        try writeByte(console, '0' + x.v)
+    case none
+    end
+    try writeText(console, "\r\n")
+end

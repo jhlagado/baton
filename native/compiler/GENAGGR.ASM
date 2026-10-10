@@ -301,18 +301,20 @@ GA_STAL:                       ; The value is in the registers.
 GA_ITEM:                       ; D and HL are the index.
     LD   E,SY_U16                  ; The index
     CALL GX_TOREG                  ; into HL as a word.
-    LD   A,(RO_OTYPE)              ; An open array's
-    SUB  AG_OPEN                   ; element
-    JR   C,.FIXED                  ; is its ID's
-    PUSH AF                        ; rest:
+    LD   A,(RO_OTYPE)              ; The array's type:
+    CALL AG_ISOA                   ; an open array's?
+    JR   NC,.FIXED                 ; No: a fixed array.
+    CALL AG_DESC                   ; HL addresses its descriptor;
+    INC  HL                        ; its second byte
+    LD   A,(HL)                    ; is the element type,
+    PUSH AF                        ; kept for the stride.
     LD   HL,(RO_PBASE)             ; its word
     INC  HL                        ; above
     INC  HL                        ; its address,
     CALL GX_FLDDE                  ; into DE (ixWord).
     JR   .CHECK                    ; Check the index.
-.FIXED:                        ; An array's
-    ADD  A,AG_OPEN                 ; type's
-    CALL AG_DESC                   ; descriptor:
+.FIXED:                        ; A fixed array's type:
+    CALL AG_DESC                   ; its descriptor:
     INC  HL                        ; its element type
     LD   A,(HL)                    ; is kept,
     PUSH AF                        ; for the stride.

@@ -239,6 +239,13 @@ const CLAIMED: Record<string, string[]> = {
     "SAMETYPE",
     "LOOPTR32",
   ],
+  "open-array descriptors: handles, Files, identifiers and enums": [
+    "OAHAND",
+    "OAFILE",
+    "OAID",
+    "OALATE",
+    "OAENUM",
+  ],
   "67e: var parameters, open arrays, from clauses and assert": [
     "VARPARM",
     "OPENARR",
