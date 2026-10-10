@@ -29,7 +29,7 @@ and `File`s followed with the open-array descriptor correction ([limits](docs/li
 ([types](spec/06-types.md#616-plain-enumerations)), followed by exhaustive value selection (D51,
 [select](spec/11-conditional-control.md#117-select)), colon types (D52), `try` (D48),
 call-site `var` (D49) and enum failure domains (D54), which complete the milestone's first
-tier. `BASIE.COM` takes 25,645 resident bytes and a 2,560-byte overlay area, 467 bytes under
+tier. `BASIE.COM` takes 25,617 resident bytes and a 2,560-byte overlay area, 495 bytes under
 its 28 KiB limit.
 
 The [forward development plan](docs/development-plan.md) records the next milestone's
