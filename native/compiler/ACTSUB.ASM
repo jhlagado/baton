@@ -916,6 +916,8 @@ AC_FIND:
 ; body is reachable.
 
 AC_ONERR:
+    CALL SY_FIND                   ; Is the name a declared symbol? Carry if so.
+    JR   NC,.DEST                  ; No: handle-destination, as the reference has it.
     CALL AC_FIND                   ; The variable's class and type, and payload.
     AND  SY_TYPE+SY_AGGR           ; A type name or an aggregate,
     JR   NZ,.DEST                  ; or

@@ -1700,6 +1700,14 @@ const REFUSED: Record<string, string> = {
   ),
   "fail with another enum's member":
     "enum A\nx\nend\nsub f() fails IoError\nfail A.x\nend\nsub main()\nend\n",
+  "a handler's undeclared variable":
+    "sub f(): u8 fails IoError\n    return 1\nend\nsub main()\n    var r: u8\n    r = f() handle rr\n    end\nend\n",
+  "a handler's undeclared variable after a call statement":
+    "sub f() fails IoError\nend\nsub main()\n    f() handle rr\n    end\nend\n",
+  "a handler after an inferred local's initializer":
+    "sub f(): u8 fails IoError\n    return 1\nend\nsub main()\n    var e: IoError\n    var r = f() handle e\n    end\nend\n",
+  "a token after an inferred local's initializer":
+    "sub g(): u8\n    return 1\nend\nsub main()\n    var r = g() 7\nend\n",
   "an incomplete i32 select":
     "var x: i32\nsub main()\nselect x\ncase -2147483648 to 2147483646\nend\nend\n",
   "an incomplete u16 select":

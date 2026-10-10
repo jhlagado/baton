@@ -132,6 +132,12 @@ EX_RENEW:
 
 EX_PREP:
     CALL EX_RENEW                  ; Make the declared name current again.
+    LD   HL,(TK_POS)               ; Save the current token's offset,
+    PUSH HL                        ; which a token peeked after an
+    LD   HL,(TK_POS+2)             ; initializer has set: the position
+    PUSH HL                        ; is moved to the name for collisions
+    LD   HL,(TK_POS+4)             ; below, and restored afterwards for
+    PUSH HL                        ; diagnostics at that token.
     PUSH BC                        ; Keep the payload across the checks.
     PUSH DE                        ; Keep the class/type too.
     LD   HL,AC_DPOS                ; A collision is reported where the...
@@ -146,7 +152,17 @@ EX_PREP:
     CALL RO_FRESH                  ; Raise it for a routine or a service.
     POP  DE                        ; Restore the class/type in D.
     POP  BC                        ; Restore the payload.
-    JP   SY_NEW                    ; Write the provisional symbol.
+    CALL SY_NEW                    ; Write the provisional symbol.
+    EX   (SP),HL                   ; HL is the saved column; keep SY_NEW's HL.
+    LD   (TK_POS+4),HL             ; Restore the current token's column.
+    POP  HL                        ; Recover SY_NEW's HL.
+    EX   (SP),HL                   ; HL is the saved line; keep SY_NEW's HL.
+    LD   (TK_POS+2),HL             ; Restore the current token's line.
+    POP  HL                        ; Recover SY_NEW's HL.
+    EX   (SP),HL                   ; HL is the saved offset; keep SY_NEW's HL.
+    LD   (TK_POS),HL               ; Restore the current token's offset.
+    POP  HL                        ; Recover SY_NEW's HL; A and flags are SY_NEW's.
+    RET                            ; Done.
 
 ;@ROUTINE IN A OUT HL CLOBBERS SIGN,PARITY,HALFCARRY,ZERO,CARRY,A,DE
 ; Address operand-stack entry A in HL: EX_STACK plus sixteen times A.
