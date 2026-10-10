@@ -601,10 +601,7 @@ AG_REC:
     PUSH BC                        ; Keep the field index and count.
     LD   A,B                       ; Select the field.
     CALL AG_FIELD                  ; Address its entry.
-    INC  HL                        ; Skip the name's address low byte.
-    INC  HL                        ; Skip its high byte.
-    INC  HL                        ; Skip the length; HL at the field type.
-    LD   A,(HL)                    ; Fetch the field's type.
+    CALL WD_AT3                    ; Step HL on three bytes; A is the byte there.
     CALL AG_PARSE                  ; Parse its initializer recursively.
     POP  BC                        ; Restore the field index and count.
     INC  B                         ; Step to the next field.

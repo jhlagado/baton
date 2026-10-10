@@ -110,14 +110,12 @@ HN_MOVE:                       ; `move` is next:
     OR   A                         ; not-writable
     LD   A,DG_CONST                ; at
     JR   NZ,.FAULT                 ; `move`.
-    LD   HL,(EX_START)             ; Usable,
-    LD   (FW_PLACE),HL             ; at its name;
+    CALL FW_HERE                   ; The flow check reports at the expression's start.
     CALL FW_USE                    ; then
     LD   HL,(HN_AT)                ; moved,
     LD   (FW_PLACE),HL             ; at
     CALL FW_MOVE                   ; `move`.
-    LD   HL,0                      ; (HN_AT
-    LD   (HN_AT),HL                ; used.)
+    CALL HN_AT0                    ; Clear HN_AT: no handle value pending.
     CALL HN_EMOV                   ; The handle moved out.
     POP  AF                        ; The type:
     PUSH AF                        ; the root alone,
@@ -133,10 +131,7 @@ HN_MOVE:                       ; `move` is next:
     LD   HL,(HN_AT)                ; at
     JP   DG_HERE                   ; `move`.
 .SYMBOL:                       ; A symbol, HL its record:
-    INC  HL                        ; its
-    INC  HL                        ; class
-    INC  HL                        ; byte.
-    LD   A,(HL)                    ; A type's name
+    CALL WD_AT3                    ; Step HL on three bytes; A is the byte there.
     AND  SY_TYPE                   ; is no
     JR   NZ,.CLASS                 ; variable;
     BIT  7,(HL)                    ; an aggregate's path is

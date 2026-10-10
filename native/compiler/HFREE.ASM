@@ -13,6 +13,15 @@
 
 ; ---------------------------------------------------------------- frees
 
+;@ROUTINE OUT HL
+; Clear HN_AT, so that HN_OWNV reports at the value itself. HL returns
+; zero; the flags are kept.
+
+HN_AT0:                        ; No other position is pending.
+    LD   HL,0                      ; Zero means the value's own position;
+    LD   (HN_AT),HL                ; store it in HN_AT.
+    RET                            ; Done.
+
 ;@ROUTINE IN HL,DE CLOBBERS A,BC,DE,HL,CARRY,ZERO,SIGN,PARITY,HALFCARRY
 ; The frees of the symbol records from HL to DE, a scope's, in order:
 ; each owning handle
@@ -25,10 +34,7 @@ HN_SEG:                        ; HL the first record, DE past the last.
     RET  NC                        ; No.
     PUSH HL                        ; The record
     PUSH DE                        ; and the end, kept.
-    INC  HL                        ; its
-    INC  HL                        ; class
-    INC  HL                        ; byte,
-    LD   A,(HL)                    ; an aggregate
+    CALL WD_AT3                    ; Step HL on three bytes; A is the byte there.
     LD   C,A                       ; local's or
     OR   SY_PARAM-SY_LOCAL         ; parameter's, var
     AND  $FF-SY_PVAR-SY_PFROM      ; or from too,
@@ -50,8 +56,7 @@ HN_SEG:                        ; HL the first record, DE past the last.
     JR   NZ,.NEXT                  ; Then nothing is written.
     PUSH DE                        ; The offset, kept.
     EX   DE,HL                     ; The handle
-    LD   A,SY_U16                  ; into
-    CALL GX_FLOAD                  ; HL,
+    CALL GX_FLW                    ; Load the u16 local at IX+HL into HL.
     CALL HN_DELHL                  ; freed if a slot;
     LD   HL,0                      ; LD HL,0,
     CALL GX_LDHL                   ; then

@@ -324,10 +324,7 @@ SY_SKIP:                       ; The provisional record is complete.
 SY_GET:
     CALL SY_FIND                   ; Look the name up among committed symbols.
     JR   NC,SY_UNDEF               ; An unknown name is undefined.
-    INC  HL                        ; Skip the spelling's address low byte.
-    INC  HL                        ; Skip its high byte.
-    INC  HL                        ; Skip the length; HL at the class/type.
-    LD   A,(HL)                    ; Return the class and type.
+    CALL WD_AT3                    ; Step HL on three bytes; A is the byte there.
     INC  HL                        ; Step to the payload word.
     LD   C,(HL)                    ; Fetch the payload's low byte.
     INC  HL                        ; Step to its high byte.

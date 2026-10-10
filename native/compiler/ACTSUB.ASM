@@ -432,10 +432,7 @@ AC_FROM:
     CALL RO_NAME                   ; Consume it.
     CALL RO_PFIND                  ; A parameter of the signature,
     JR   NC,.EFROM                 ; B its index, HL its record?
-    INC  HL                        ; Its
-    INC  HL                        ; type
-    INC  HL                        ; less
-    LD   A,(HL)                    ; AG_VAR
+    CALL WD_AT3                    ; Step HL on three bytes; A is the byte there.
     AND  $7F                       ; must be
     CALL PL_ISHND                  ; an aggregate,
     JR   C,.EFROM                  ; not a handle,
@@ -467,10 +464,7 @@ AC_FAILS:                      ; After `fails NAME`, NAME the current token.
     SET  0,(HL)                    ; set RO_FFAIL, the routine can fail.
     CALL SY_FIND                   ; Find NAME in the symbol table; carry if found.
     JR   NC,.NOT                   ; Not declared: no enum.
-    INC  HL                        ; Step past the symbol's
-    INC  HL                        ; name address and length
-    INC  HL                        ; to its class byte.
-    LD   A,(HL)                    ; Load the class byte.
+    CALL WD_AT3                    ; Step HL on three bytes; A is the byte there.
     CP   SY_TYPE                   ; A type name has class SY_TYPE exactly.
     JR   NZ,.NOT                   ; Anything else is no enum.
     INC  HL                        ; Step to the payload,

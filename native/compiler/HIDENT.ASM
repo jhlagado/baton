@@ -131,8 +131,7 @@ HN_IDEX:                       ; `id` was the token.
     BIT  1,A                       ; Not
     JR   NZ,.NOT                   ; an identifier.
     PUSH AF                        ; Kept.
-    LD   HL,(EX_START)             ; Usable,
-    LD   (FW_PLACE),HL             ; at its name;
+    CALL FW_HERE                   ; The flow check reports at the expression's start.
     CALL FW_USE                    ; then
     LD   A,SY_U16                  ; loaded,
     LD   (RO_OTYPE),A              ; a word,
@@ -142,14 +141,16 @@ HN_IDEX:                       ; `id` was the token.
     POP  AF                        ; The type
     OR   AG_HID                    ; an identifier's.
     RET                            ; DEHL holds it.
-.NOT:                          ; Not an owner:
-    CP   AG_FIRST                  ; a record's
-    JR   C,.OWNER                  ; identifier
-    CALL AG_ISOA                   ; (not an open array, nor outside
-    JR   C,.OWNER                  ; the table: OW_IDREC, `id` staged
-    LD   (AC_BOUND),HL             ; in AC_BOUND,
-    JP   OW_IDREC                  ; OWNBODY.ASM); return.
-.OWNER:                        ; Anything else is not-owner,
+.NOT:                          ; Not a pool's handle: perhaps a record.
+    CP   AG_FIRST                  ; A built-in type has no record identifier.
+    JR   C,.OWNER                  ; Not-owner, then.
+    CP   AG_FIRST+AG_TCAP          ; A File, view or identifier is past the table.
+    JR   NC,.OWNER                 ; Not-owner, then.
+    CALL AG_ISOA                   ; Carry if the table type is an open array.
+    JR   C,.OWNER                  ; Not-owner, then.
+    LD   (AC_BOUND),HL             ; Keep the `id` position for OW_IDREC,
+    JP   OW_IDREC                  ; which makes a record's identifier (OWNBODY.ASM).
+.OWNER:                        ; Every other type is not-owner.
     CALL DG_RHERE                  ; Raise the code below at offset HL.
     DB   DG_OWNER                  ; not-owner (106); no return.
 
@@ -272,8 +273,7 @@ HN_IDLET:                      ; A is the identifier's type.
     DB   12,$C1,$7D,$02,$03,$7C,$02,$03,$7B,$02,$03,$7A,$02 ; H, E and D.
     JP   EM_POP2                   ; Two bytes popped; return.
 .PLACED:                       ; Static, in the frame or an alias:
-    LD   HL,0                      ; a mismatch is reported
-    LD   (HN_AT),HL                ; at the value;
+    CALL HN_AT0                    ; Clear HN_AT: no handle value pending.
     CALL .VALUE                    ; the value,
     LD   A,SY_U32                  ; four
     LD   (RO_OTYPE),A              ; bytes,
@@ -350,8 +350,7 @@ HN_SLARG:                      ; A is the parameter's type.
     CP   $10                       ; followed it
     LD   A,DG_HOLDR                ; (slot-holder
     JP   Z,DG_HERE                 ; otherwise).
-    LD   HL,(EX_START)             ; Used
-    LD   (FW_PLACE),HL             ; directly
+    CALL FW_HERE                   ; The flow check reports at the expression's start.
     CALL FW_SEEN                   ; (noteDirect).
     CALL GA_ADDR                   ; Its address, HL;
     LD   A,(RO_PPUSH)              ; its owner word:
@@ -557,8 +556,7 @@ HN_EQ:                         ; A is the type.
 .ID:                           ; identifier's
     OR   AG_HOPT                   ; of the type
     LD   E,A                       ; made optional,
-    LD   HL,0                      ; reported at
-    LD   (HN_AT),HL                ; the value;
+    CALL HN_AT0                    ; Clear HN_AT: no handle value pending.
     CALL HN_IDV0                   ; in DEHL.
 .GOT:                          ; Then EXX,
     CALL EM_SEQ                    ; POP HL,

@@ -352,10 +352,7 @@ RO_DISP:
     INC  A                         ; Its index.
     CALL RO_PARAM                  ; HL addresses its entry.
 .LOOP:                         ; Look at one later parameter.
-    INC  HL                        ; Skip the spelling's address.
-    INC  HL                        ; Skip its high byte.
-    INC  HL                        ; Skip the length to reach the type.
-    LD   A,(HL)                    ; Read the type.
+    CALL WD_AT3                    ; Step HL on three bytes; A is the byte there.
     PUSH BC                        ; Keep the count.
     CALL RO_WORDS                  ; B is its argument's bytes.
     LD   A,B                       ; Less the word

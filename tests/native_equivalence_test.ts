@@ -245,6 +245,7 @@ const CLAIMED: Record<string, string[]> = {
     "OAID",
     "OALATE",
     "OAENUM",
+    "OAFRAME",
   ],
   "67e: var parameters, open arrays, from clauses and assert": [
     "VARPARM",
@@ -1193,6 +1194,8 @@ const REFUSED: Record<string, string> = {
     "const a: u8[2] = [1,2]\nsub f(var x: u8[2])\nend\nsub main()\nf(var (a))\nend\n",
   "an array in parentheses for a view":
     "var a: u8[4]\nsub f(x: u8[]): u8\nreturn x[0]\nend\nsub main()\nvar c = f((a))\nend\n",
+  "id of a File (open-array descriptors)":
+    "record Node\nv: u8\nend\npool nodes: Node[4]\nsub main()\nvar f: File = console\nvar j: id nodes? = id(f)\nend\n",
   "main calling itself without a forward":
     "var n: u8\nsub main()\nn = n + 1\nif n < 3\nmain()\nend\nend\n",
   "a forward main with a parameter":

@@ -1,0 +1,36 @@
+// Handles reached through an index: the frame covers the index's push
+// beneath the handle's temporary. (open-array descriptors)
+record Node
+    v: u8
+end
+pool nodes: Node[4]
+
+sub first(var a: nodes[]): u8
+    return a[0].v
+end
+
+sub at(a: nodes[], i: u16): u8
+    return a[i].v
+end
+
+sub fixed(a: nodes[2], i: u16): u8
+    return a[i].v
+end
+
+sub ident(a: id nodes[]): u8
+    return a[1].v
+end
+
+sub main() fails IoError
+    var hs: nodes[2]
+    hs[0] = new nodes(3)
+    hs[1] = new nodes(4)
+    var ids: id nodes[2]
+    ids[0] = id(hs[0])
+    ids[1] = id(hs[1])
+    try writeByte(console, '0' + first(var hs))
+    try writeByte(console, '0' + at(hs, 1))
+    try writeByte(console, '0' + fixed(hs, 0))
+    try writeByte(console, '0' + ident(ids))
+    try writeText(console, "\r\n")
+end

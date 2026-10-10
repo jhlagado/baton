@@ -92,8 +92,7 @@ GA_SLOT:                       ; HL is the offset from IX.
 
 GA_VIA:                        ; The place is an alias.
     LD   HL,(RO_PBASE)             ; The address word's offset from IX,
-    LD   A,SY_U16                  ; a word,
-    CALL GX_FLOAD                  ; loaded into HL (ixWord).
+    CALL GX_FLW                    ; Load the u16 local at IX+HL into HL.
     LD   HL,(RO_PADD)              ; The bytes on; fall into GA_ADDC.
 
 ;@ROUTINE IN HL CLOBBERS A,B,HL,CARRY,ZERO,SIGN,PARITY,HALFCARRY

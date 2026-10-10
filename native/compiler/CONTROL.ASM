@@ -125,10 +125,7 @@ CT_EDEEP:
 CT_POP:
     CALL CT_BLOCK                  ; The block ends; HL is the frame.
     INC  HL                        ; Its
-    INC  HL                        ; labels
-    INC  HL                        ; in use
-    INC  HL                        ; before,
-    LD   A,(HL)                    ; CT_FLCNT:
+    CALL WD_AT3                    ; Step HL on three bytes; A is the byte there.
     LD   (EM_LCNT),A               ; the rest are free.
     LD   HL,CT_DEPTH               ; One frame
     DEC  (HL)                      ; fewer is open.

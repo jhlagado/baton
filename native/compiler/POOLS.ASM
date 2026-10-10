@@ -78,10 +78,7 @@ PL_AT:                         ; A is the pool's index.
 PL_FIND:                       ; The NAME is current.
     CALL SY_FIND                   ; A symbol of the name?
     RET  NC                        ; No.
-    INC  HL                        ; Its
-    INC  HL                        ; class
-    INC  HL                        ; byte:
-    LD   A,(HL)                    ; a pool's?
+    CALL WD_AT3                    ; Step HL on three bytes; A is the byte there.
     CP   PL_CLASS                  ; Then
     SCF                            ; carry
     CCF                            ; is cleared

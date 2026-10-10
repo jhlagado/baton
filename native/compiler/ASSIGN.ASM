@@ -182,8 +182,7 @@ RO_ASGN:                       ; A is the path's type.
     CALL EM_OP                     ; LD D,A;
     DB   $57                       ; then
     LD   HL,(RO_PBASE)             ; the string's
-    LD   A,SY_U16                  ; address,
-    CALL GX_FLOAD                  ; LD L,(IX+n), LD H,(IX+n+1);
+    CALL GX_FLW                    ; Load the u16 local at IX+HL into HL.
     CALL EM_HELP                   ; CALL STR_SETL.
     DW   HP_SETL                   ; Its figure counted.
     RET                            ; AC_ROUTE.

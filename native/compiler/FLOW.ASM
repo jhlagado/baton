@@ -45,16 +45,22 @@ FW_VALUE EQU  2                ; State: a value.
 FW_MAYBE EQU  3                ; State: maybe moved.
 FW_CAP EQU  16                 ; Tracked owners in scope; DG_OWNRS beyond.
 
+;@ROUTINE OUT HL
+; Report the flow check's diagnostics at the expression's start: FW_PLACE
+; becomes EX_START. HL returns EX_START; the flags are kept.
+
+FW_HERE:                       ; Before a flow check of the expression.
+    LD   HL,(EX_START)             ; The expression's first token's offset
+    LD   (FW_PLACE),HL             ; is where a flow diagnostic is reported.
+    RET                            ; Done.
+
 ;@ROUTINE IN HL OUT CARRY,HL CLOBBERS A,ZERO,SIGN,PARITY,HALFCARRY
 ; Carry if the symbol record at HL is a tracked owner, an owning handle
 ; local or parameter (not var); HL returns at its FW_STATE byte either
 ; way. BC and DE are kept.
 
 FW_TRK:                        ; HL is a record.
-    INC  HL                        ; Its
-    INC  HL                        ; class
-    INC  HL                        ; byte,
-    LD   A,(HL)                    ; kept.
+    CALL WD_AT3                    ; Step HL on three bytes; A is the byte there.
     INC  HL                        ; On
     INC  HL                        ; to
     INC  HL                        ; its type,

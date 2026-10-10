@@ -1044,8 +1044,7 @@ RO_FVAL:
     LD   (EX_START),HL             ; where a fault is reported,
     PUSH HL                        ; (kept)
     CALL HN_OPEN                   ; after its parentheses, B,
-    LD   HL,0                      ; (none of which is
-    LD   (HN_AT),HL                ; a handle's target)
+    CALL HN_AT0                    ; Clear HN_AT: no handle value pending.
     POP  HL                        ; (the start)
     PUSH BC                        ; counted,
     PUSH HL                        ; and kept across it

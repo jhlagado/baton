@@ -52,8 +52,7 @@ OW_SEL:                        ; AC_BOUND is the handle's type.
     LD   A,H                       ; in a call's
     OR   L                         ; result is
     JR   Z,.MODE                   ; not tracked;
-    LD   HL,(EX_START)             ; another is used,
-    LD   (FW_PLACE),HL             ; at its name:
+    CALL FW_HERE                   ; The flow check reports at the expression's start.
     LD   A,(AC_BOUND)              ; an owner
     BIT  1,A                       ; directly
     CALL Z,FW_SEEN               ; (noteDirect),
@@ -113,8 +112,7 @@ OW_SEL:                        ; AC_BOUND is the handle's type.
     LD   A,DG_STMT                 ; and not
     LD   HL,AC_DELTA+2             ; read-only)
     JP   NZ,DG_AT                  ; No return.
-    LD   HL,(EX_START)             ; Moved,
-    LD   (FW_PLACE),HL             ; at its name,
+    CALL FW_HERE                   ; The flow check reports at the expression's start.
     CALL FW_MOVE                   ; in this statement;
     CALL HN_EMOV                   ; moved out, in HL.
     LD   C,8+16                    ; A handle select, bit 4 move;
@@ -283,8 +281,7 @@ OW_TAKEN:                      ; The arm's body begins.
     PUSH HL                        ; kept;
     LD   B,CT_FVAR                 ; the
     CALL CT_FWORD                  ; slot's
-    LD   A,SY_U16                  ; handle
-    CALL GX_FLOAD                  ; loaded,
+    CALL GX_FLW                    ; Load the u16 local at IX+HL into HL.
     CALL EM_HELP                   ; CALL LINK0,
     DW   HP_LINK0                  ; then
     POP  HL                        ; stored
@@ -338,8 +335,7 @@ OW_LEASA:                      ; The path is parsed:
     JR   NZ,.LEASE                 ; (lease otherwise);
     CALL FW_SEEN                   ; used directly (noteDirect);
     LD   HL,(RO_PBASE)             ; its value,
-    LD   A,SY_U16                  ; LD L,(IX+d),
-    CALL GX_FLOAD                  ; LD H,(IX+d+1).
+    CALL GX_FLW                    ; Load the u16 local at IX+HL into HL.
     POP  BC                        ; A var parameter
     BIT  7,B                       ; takes it
     RET  Z                         ; as its owner word too:
@@ -402,8 +398,7 @@ OW_IDREC:                      ; The path is parsed.
     LD   D,(HL)                    ; (PL_EORD)
     PUSH DE                        ; too.
     LD   HL,(RO_POWN)              ; LD L,(IX+owner),
-    LD   A,SY_U16                  ; LD H,(IX+owner+1);
-    CALL GX_FLOAD                  ; then
+    CALL GX_FLW                    ; Load the u16 local at IX+HL into HL.
     LD   HL,(RO_PBASE)             ; LD E,(IX+alias),
     CALL GX_FLDDE                  ; LD D,(IX+alias+1); OR A,
     CALL EM_SEQ                    ; SBC HL,DE,
@@ -478,10 +473,7 @@ OW_TNAME:                      ; A is the type.
     LD   DE,-SY_RECB               ; The
     ADD  HL,DE                     ; record before.
     PUSH HL                        ; Kept.
-    INC  HL                        ; Its
-    INC  HL                        ; class
-    INC  HL                        ; byte:
-    LD   A,(HL)                    ; a record
+    CALL WD_AT3                    ; Step HL on three bytes; A is the byte there.
     CP   SY_RTYPE                  ; type
     JR   NZ,.NEXT                  ; whose
     INC  HL                        ; payload

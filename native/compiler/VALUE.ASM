@@ -373,10 +373,7 @@ VL_DIV:                        ; A is the operator.
 
 VL_RANGE:                      ; HL is the value.
     PUSH HL                        ; Keep it.
-    INC  HL                        ; Its
-    INC  HL                        ; fourth
-    INC  HL                        ; byte
-    LD   A,(HL)                    ; holds bit 31,
+    CALL WD_AT3                    ; Step HL on three bytes; A is the byte there.
     INC  HL                        ; and the next
     LD   E,(HL)                    ; is the top byte.
     POP  HL                        ; The value again.
@@ -455,10 +452,7 @@ VL_FKEYS:                      ; a and b are f32 values.
     LD   HL,EX_RVAL                ; Fall into .KEY for b.
 .KEY:                          ; HL is a value.
     PUSH HL                        ; Keep it.
-    INC  HL                        ; Its
-    INC  HL                        ; top
-    INC  HL                        ; byte:
-    LD   A,(HL)                    ; the sign
+    CALL WD_AT3                    ; Step HL on three bytes; A is the byte there.
     RES  7,(HL)                    ; leaves it,
     POP  HL                        ; and when it was set
     RLA                            ; the magnitude

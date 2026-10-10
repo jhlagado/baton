@@ -145,6 +145,12 @@ GX_ABSD:                       ; A is the opcode, BC the target, DE the addend.
     LD   L,C                       ; the variable's blob.
     JP   EM_REF                    ; Its address, and return.
 
+;@ROUTINE IN HL CLOBBERS A,BC,DE,HL,CARRY,ZERO,SIGN,PARITY,HALFCARRY
+; GX_FLOAD for a u16: load the word local or parameter at IX+HL into HL.
+
+GX_FLW:                        ; HL is the offset.
+    LD   A,SY_U16                  ; The type is u16; fall into GX_FLOAD.
+
 ;@ROUTINE IN A,HL CLOBBERS A,BC,DE,HL,CARRY,ZERO,SIGN,PARITY,HALFCARRY
 ; Load the local or parameter of scalar type A at IX+HL: A for a byte
 ; (ixByte), HL for a word (ixWord), HL then DE for a long.

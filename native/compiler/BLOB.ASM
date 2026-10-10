@@ -496,6 +496,17 @@ BL_BDOS:                       ; C is the function, DE its argument.
     POP  IY                        ; IY again.
     RET                            ; A is the status.
 
+;@ROUTINE IN HL OUT A,HL
+; Step HL on three bytes and load the byte there into A: a symbol record's
+; class byte, for one. The flags and every other register are kept.
+
+WD_AT3:                        ; HL addresses a record.
+    INC  HL                        ; Step past its first byte,
+    INC  HL                        ; its second
+    INC  HL                        ; and its third.
+    LD   A,(HL)                    ; A is the fourth byte.
+    RET                            ; Done.
+
 ;@ROUTINE IN HL OUT DE,HL
 ; DE is the word at HL, low byte first; HL returns past it. A, BC and the
 ; flags are kept.

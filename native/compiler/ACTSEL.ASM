@@ -87,10 +87,7 @@ AC_PICK:
 .NAME:                         ; A name.
     CALL SY_FIND                   ; A symbol?
     JR   NC,.CALL                  ; No: a routine, or undeclared.
-    INC  HL                        ; Its
-    INC  HL                        ; class,
-    INC  HL                        ; past its spelling's
-    LD   A,(HL)                    ; address and length:
+    CALL WD_AT3                    ; Step HL on three bytes; A is the byte there.
     AND  SY_CMASK                  ; a constant's or a type's
     JP   Z,.VALUE                  ; is an expression's.
     BIT  7,(HL)                    ; SY_AGGR: a path?

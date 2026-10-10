@@ -915,10 +915,7 @@ EX_PEEKK:                      ; C masks the type.
     CALL SY_FIND                   ; A symbol?
     POP  BC                        ; (the mask)
     JR   NC,.NOT                   ; No.
-    INC  HL                        ; Its
-    INC  HL                        ; class
-    INC  HL                        ; and type:
-    LD   A,(HL)                    ; a scalar
+    CALL WD_AT3                    ; Step HL on three bytes; A is the byte there.
     AND  SY_CMASK+SY_TYPE+SY_AGGR  ; constant
     JR   NZ,.NOT                   ; has none of these,
     LD   A,(HL)                    ; and its type

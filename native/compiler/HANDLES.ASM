@@ -141,10 +141,7 @@ HN_NEW:                        ; `new` is next.
     PUSH BC                        ; The loop, kept.
     LD   A,C                       ; The field's
     CALL AG_FIELD                  ; entry:
-    INC  HL                        ; past
-    INC  HL                        ; its
-    INC  HL                        ; name,
-    LD   A,(HL)                    ; its type
+    CALL WD_AT3                    ; Step HL on three bytes; A is the byte there.
     INC  HL                        ; and
     LD   E,(HL)                    ; its
     INC  HL                        ; offset,
@@ -158,8 +155,7 @@ HN_NEW:                        ; `new` is next.
     LD   D,(HL)                    ; DE,
     EX   DE,HL                     ; HL,
     LD   (RO_POWN),HL              ; the slot word of the field's place.
-    LD   A,SY_U16                  ; The slot's address
-    CALL GX_FLOAD                  ; loaded,
+    CALL GX_FLW                    ; Load the u16 local at IX+HL into HL.
     POP  HL                        ; the field's offset
     CALL GA_ADDC                   ; added:
     POP  AF                        ; the field's
@@ -185,8 +181,7 @@ HN_NEW:                        ; `new` is next.
 .CLOSE:                        ; Every field given is assigned.
     CALL PR_RIGHT                  ; `)`.
     POP  HL                        ; The temporary:
-    LD   A,SY_U16                  ; the slot's address
-    CALL GX_FLOAD                  ; in HL.
+    CALL GX_FLW                    ; Load the u16 local at IX+HL into HL.
     POP  BC                        ; C the type, B the label.
     BIT  0,C                       ; new?
     JR   Z,.DONE                   ; Its label
@@ -439,8 +434,7 @@ HN_INFER:                      ; The initializer's first token:
     CALL HN_PHND                   ; (the source after it
     JR   NC,HN_INF0                ; says) holds a handle:
     CALL HN_OPEN                   ; its parentheses, B,
-    LD   HL,0                      ; (no target: nothing is reported
-    LD   (HN_AT),HL                ; at the first `(`)
+    CALL HN_AT0                    ; Clear HN_AT: no handle value pending.
     PUSH BC                        ; (counted)
     CALL HN_INF0                   ; the value, the local's type,
     POP  BC                        ; then as many
@@ -687,8 +681,7 @@ HN_SCAN:                       ; A frames to look below.
 
 HN_NOTE:                       ; A is the target's type.
     PUSH AF                        ; Kept.
-    LD   HL,(EX_START)             ; At the
-    LD   (FW_PLACE),HL             ; root's name:
+    CALL FW_HERE                   ; The flow check reports at the expression's start.
     CALL FW_ALONE                  ; the root alone
     JR   NZ,.DIRECT                ; is moved,
     CALL FW_MOVE                   ; if tracked;
@@ -753,6 +746,14 @@ HN_DEREF:                      ; A dot follows the handle.
 .SLOT:                         ; A is the temporary's size.
     CALL EM_ALLOC                  ; The temporary,
     LD   (RO_POWN),HL              ; the slot word.
+    LD   A,(RO_PPUSH)              ; The path's flags: bits 3 and 0 matter.
+    AND  9                         ; Bit 3, a run-time index; bit 0, a base pushed.
+    CP   8                         ; Index, base unpushed: the reference pushes later.
+    JR   NZ,.LOAD                  ; Any other path: nothing more to count.
+    LD   A,2                       ; The index's PUSH HL, beneath this temporary,
+    CALL EM_PUSH                   ; is counted again, so the frame covers it.
+    CALL EM_POP2                   ; It is popped again: the temporaries are as before.
+.LOAD:                         ; Load the handle.
     CALL HN_WIDT                   ; The handle, at any place
     LD   HL,RO_OTYPE               ; (the reference's loadValue),
     LD   B,(HL)                    ; loaded as
@@ -841,8 +842,7 @@ HN_RECK:                       ; The value is in the registers.
     CALL EM_PUSH                   ; pushed;
     POP  HL                        ; the
     PUSH HL                        ; slot's
-    LD   A,SY_U16                  ; address
-    CALL GX_FLOAD                  ; in HL,
+    CALL GX_FLW                    ; Load the u16 local at IX+HL into HL.
     POP  HL                        ; its
     INC  HL                        ; generation
     INC  HL                        ; in DE,
@@ -941,8 +941,7 @@ HN_ARG:                        ; A is the parameter's type.
     DW   HP_LINK0                  ; LINK0.
     RET                            ; Pushed by the caller.
 .ID:                           ; an identifier's (toRegisters),
-    LD   HL,0                      ; reported at
-    LD   (HN_AT),HL                ; the value,
+    CALL HN_AT0                    ; Clear HN_AT: no handle value pending.
     CALL HN_IDV                    ; in DEHL: PUSH DE, counted;
     JP   HN_PSHDE                  ; the caller pushes HL.
 
