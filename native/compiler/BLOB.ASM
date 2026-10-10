@@ -376,8 +376,9 @@ BL_NEXT:                       ; HL is an entry.
 ; Spill the blob's bytes held in memory, all their whole records, to
 ; NAME.$CD (made at the first, its first record kept in BL_REC0 too), and
 ; move the rest to where they began: BL_CBASE moves down by the bytes
-; spilled. The writing is the SPILL overlay's (SP_WRITE, SPILL.ASM). Carry when no blob is built or none of its records is whole;
-; a full disk is OUT_FAIL. BC, DE, HL, IX and IY are kept.
+; spilled. The writing is the SPILL overlay's (SP_WRITE, SPILL.ASM).
+; Carry when no blob is built or none of its records is whole; a full
+; disk is OUT_FAIL. BC, DE, HL, IX and IY are kept.
 
 BL_FLUSH:                      ; The free memory is full.
     PUSH BC                        ; Keep

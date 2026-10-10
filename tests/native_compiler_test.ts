@@ -31,18 +31,18 @@ Deno.test("BASIE.COM and BASIE.OVL are the recorded images and within budget", a
     image.overlays.map((o) => [o.name, o.bytes.length]),
     [
       ["BEGIN", 2558],
-      ["NAMES", 1002],
+      ["NAMES", 880],
       ["CHAIN", 496],
       ["DIAG", 1286],
       ["LOOKUP", 1063],
       ["FLOAT", 1458],
       ["OWNERS", 1663],
-      ["PREP", 218],
+      ["PREP", 320],
       ["SPILL", 199],
       ["ENUMS", 149],
     ],
   );
-  assertEquals(image.areaSize, 2_666);
+  assertEquals(image.areaSize, 2_560);
   // The budget counts the memory the compiler's code takes: the resident
   // image and the overlay area after it.
   const memory = image.resident + image.areaSize;
@@ -55,6 +55,6 @@ Deno.test("BASIE.COM and BASIE.OVL are the recorded images and within budget", a
 });
 
 const DIGEST =
-  "4ea0e5530090627b28cfdabe2f3f62d4eeabc8a18a47bcc2a40f249bf169e92a";
+  "7a864ee711ad58f0abcbf928e53f055bc097ebd96f5d83de430a37398c86eda6";
 const OVL_DIGEST =
-  "d6b0fbca4eb670253e448de945bb64e94db484e6e91f334cc3635b13bc190729";
+  "534677d40d8ebbb38d40eb469760679929cb0a2294c1860fa378343bea427cea";

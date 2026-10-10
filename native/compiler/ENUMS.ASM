@@ -80,49 +80,49 @@ EN_DECL:                       ; After `enum`.
 
 ; A type name's payload BC. Resolve its qualified member as known enum.
 ; Non-enum names retain the existing wrong-class diagnostic.
-EN_MEM:
-    LD   A,D
-    CP   SY_TYPE                ; A type name, not a pool (SY_GLOB too)?
-    JR   NZ,.CLASS
-    LD   A,C
-    CALL AG_DESC                 ; Type names hold dynamic IDs; BC kept.
-    LD   A,(HL)
-    CP   AG_KENUM
-.CLASS:
-    LD   A,DG_CLASS
-    JP   NZ,DG_NAMED
-    PUSH BC                     ; Retain nominal ID.
-    LD   HL,(TK_POS)
-    PUSH HL                     ; Only the source position survives the peek.
-    CALL PR_PEEK
-    CP   TK_DOT
-    JR   Z,.QUAL
-    POP  HL
-    PUSH HL
-    LD   A,DG_CLASS
-    CALL DG_WORD                ; Recover the typename for the diagnostic.
-    POP  HL
-    JP   DG_HERE
-.QUAL:
-    POP  HL
-    CALL PR_TAKE
-    CALL RO_NAME
-    POP  BC
-    PUSH BC
-    LD   A,C
-    CALL AG_DESC
-    INC  HL
-    INC  HL
-    CALL WD_GET
-    EX   DE,HL
-    CALL EN_FIND
-    JP   NC,SY_UNDEF
-    INC  HL
-    INC  HL
-    INC  HL
-    LD   L,(HL)
-    LD   H,0
-    POP  BC
-    LD   B,C
-    SET  7,B
-    JP   EX_LIT
+EN_MEM:                        ; D is the name's class byte, BC its payload.
+    LD   A,D                       ; Load the class byte.
+    CP   SY_TYPE                   ; Only a type name is exactly SY_TYPE; a pool adds SY_GLOB.
+    JR   NZ,.CLASS                 ; Anything else is wrong-class.
+    LD   A,C                       ; A is the type's ID, the payload's low byte.
+    CALL AG_DESC                   ; HL addresses the type's descriptor; BC is kept.
+    LD   A,(HL)                    ; Load the descriptor's kind.
+    CP   AG_KENUM                  ; Is it an enum?
+.CLASS:                        ; Not an enum type: zero clear here.
+    LD   A,DG_CLASS                ; The diagnostic is wrong-class;
+    JP   NZ,DG_NAMED               ; raise it, naming the type, unless an enum.
+    PUSH BC                        ; Keep the enum's ID for the member's value.
+    LD   HL,(TK_POS)               ; Keep the type name's offset: the peek below
+    PUSH HL                        ; moves TK_POS to the next token.
+    CALL PR_PEEK                   ; Look at the token after the type name.
+    CP   TK_DOT                    ; Is it `.`, a qualified member?
+    JR   Z,.QUAL                   ; Then read the member.
+    POP  HL                        ; No: the type name alone is no value.
+    PUSH HL                        ; Keep its offset on the stack again.
+    LD   A,DG_CLASS                ; The diagnostic is wrong-class,
+    CALL DG_WORD                   ; naming the type, as argument 1.
+    POP  HL                        ; HL is the type name's offset,
+    JP   DG_HERE                   ; where wrong-class is raised; no return.
+.QUAL:                         ; A qualified member follows.
+    POP  HL                        ; Drop the saved offset.
+    CALL PR_TAKE                   ; Consume `.`.
+    CALL RO_NAME                   ; Take the member's name.
+    POP  BC                        ; Recover the enum's ID
+    PUSH BC                        ; and keep it again.
+    LD   A,C                       ; A is the enum's ID.
+    CALL AG_DESC                   ; HL addresses its descriptor.
+    INC  HL                        ; Step past the kind
+    INC  HL                        ; and the member count
+    CALL WD_GET                    ; to the member list's head, read into DE.
+    EX   DE,HL                     ; HL heads the member list.
+    CALL EN_FIND                   ; Find the member's name: carry and HL its node.
+    JP   NC,SY_UNDEF               ; Not a member: undeclared-name, naming it.
+    INC  HL                        ; Step past the spelling's address
+    INC  HL                        ; and length
+    INC  HL                        ; to the node's ordinal.
+    LD   L,(HL)                    ; L is the member's ordinal,
+    LD   H,0                       ; and HL its value as a word.
+    POP  BC                        ; Recover the enum's ID in C.
+    LD   B,C                       ; B is the value's metadata: the enum type,
+    SET  7,B                       ; known (bit 7), a constant.
+    JP   EX_LIT                    ; Return the member as a known constant.

@@ -19,8 +19,9 @@
 ;    KW_FROM   the spelling `from`, which begins a result's from clause
 ;
 ;  KW_TAB holds spellings, less their first letter (KW_IDX gives it), whose
-;  last byte has bit 7 set, each followed by its token kind. Matching is exact and case-sensitive. A word
-;  that matches no KW_TAB entry is a NAME, so `main`, `length`, `File` and
+;  last byte has bit 7 set, each followed by its token kind. Matching is
+;  exact and case-sensitive. A word that matches no KW_TAB entry is a
+;  NAME, so `main`, `length`, `File` and
 ;  the predeclared names reach the parser as NAME tokens and are
 ;  recognised there. The counts (KW_CNT, KW_PCNT) must be kept equal to the
 ;  number of entries by hand.

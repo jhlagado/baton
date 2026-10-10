@@ -21,13 +21,10 @@
 ;
 ;  The table is the NAMES overlay of BASIE.OVL (OVERLAY.ASM), at the
 ;  overlay area's start, where it stays for the whole compilation. It
-;  begins with IoError (D54): the address of its member nodes, then its
-;  name's length and spelling, HP_SKIP bytes that PREP reads (PP_RUN)
-;  and RO_LIB passes over.
+;  begins with the address of IoError's member spellings (D54), the
+;  HP_SKIP bytes that PREP reads (PP_RUN) and RO_LIB passes over.
 
-HP_IOERR:
-    DW   HP_N0                     ; IoError's members,
-    DB   7,"IoError"               ; and its name.
+    DW   HP_IOS                    ; Where IoError's member spellings start.
 HP_NAMES:
     DB   8,"textMode"              ; textMode: a constant,
     DB   SY_KNOWN+SY_EXACT,0       ; exact, 0.
@@ -175,98 +172,23 @@ HP_NAMES:
     DB   0,0                       ; 0 argument bytes; no parameters.
     DB   0                         ; The end of the table: 38 names.
 
-HP_N0:                         ; endOfInput, 0:
-    DW   HP_S0                     ; its spelling,
-    DB   10,0                      ; length and ordinal,
-    DW   HP_N1                     ; the next.
-HP_N1:                         ; inputFailure, 1:
-    DW   HP_S1                     ; its spelling,
-    DB   12,1                      ; length and ordinal,
-    DW   HP_N2                     ; the next.
-HP_N2:                         ; outputFailure, 2:
-    DW   HP_S2                     ; its spelling,
-    DB   13,2                      ; length and ordinal,
-    DW   HP_N3                     ; the next.
-HP_N3:                         ; storageFailure, 3:
-    DW   HP_S3                     ; its spelling,
-    DB   14,3                      ; length and ordinal,
-    DW   HP_N4                     ; the next.
-HP_N4:                         ; fileNotFound, 4:
-    DW   HP_S4                     ; its spelling,
-    DB   12,4                      ; length and ordinal,
-    DW   HP_N5                     ; the next.
-HP_N5:                         ; fileExists, 5:
-    DW   HP_S5                     ; its spelling,
-    DB   10,5                      ; length and ordinal,
-    DW   HP_N6                     ; the next.
-HP_N6:                         ; badName, 6:
-    DW   HP_S6                     ; its spelling,
-    DB   7,6                       ; length and ordinal,
-    DW   HP_N7                     ; the next.
-HP_N7:                         ; tooManyFiles, 7:
-    DW   HP_S7                     ; its spelling,
-    DB   12,7                      ; length and ordinal,
-    DW   HP_N8                     ; the next.
-HP_N8:                         ; fileClosed, 8:
-    DW   HP_S8                     ; its spelling,
-    DB   10,8                      ; length and ordinal,
-    DW   HP_N9                     ; the next.
-HP_N9:                         ; diskFull, 9:
-    DW   HP_S9                     ; its spelling,
-    DB   8,9                       ; length and ordinal,
-    DW   HP_N10                    ; the next.
-HP_N10:                        ; directoryFull, 10:
-    DW   HP_S10                    ; its spelling,
-    DB   13,10                     ; length and ordinal,
-    DW   HP_N11                    ; the next.
-HP_N11:                        ; readOnly, 11:
-    DW   HP_S11                    ; its spelling,
-    DB   8,11                      ; length and ordinal,
-    DW   HP_N12                    ; the next.
-HP_N12:                        ; seekFailure, 12:
-    DW   HP_S12                    ; its spelling,
-    DB   11,12                     ; length and ordinal,
-    DW   HP_N13                    ; the next.
-HP_N13:                        ; lineTooLong, 13:
-    DW   HP_S13                    ; its spelling,
-    DB   11,13                     ; length and ordinal,
-    DW   HP_N14                    ; the next.
-HP_N14:                        ; notAvailable, 14:
-    DW   HP_S14                    ; its spelling,
-    DB   12,14                     ; length and ordinal,
-    DW   HP_N15                    ; the next.
-HP_N15:                        ; fileBusy, 15:
-    DW   HP_S15                    ; its spelling,
-    DB   8,15                      ; length and ordinal,
-    DW   HP_N16                    ; the next.
-HP_N16:                        ; noSearch, 16:
-    DW   HP_S16                    ; its spelling,
-    DB   8,16                      ; length and ordinal,
-    DW   HP_N17                    ; the next.
-HP_N17:                        ; badMode, 17:
-    DW   HP_S17                    ; its spelling,
-    DB   7,17                      ; length and ordinal,
-    DW   HP_N18                    ; the next.
-HP_N18:                        ; invalid, 18:
-    DW   HP_S18                    ; its spelling,
-    DB   7,18                      ; length and ordinal,
-    DW   0                         ; the next.
-HP_S0: DB "endOfInput"         ; endOfInput's spelling.
-HP_S1: DB "inputFailure"       ; inputFailure's spelling.
-HP_S2: DB "outputFailure"      ; outputFailure's spelling.
-HP_S3: DB "storageFailure"     ; storageFailure's spelling.
-HP_S4: DB "fileNotFound"       ; fileNotFound's spelling.
-HP_S5: DB "fileExists"         ; fileExists's spelling.
-HP_S6: DB "badName"            ; badName's spelling.
-HP_S7: DB "tooManyFiles"       ; tooManyFiles's spelling.
-HP_S8: DB "fileClosed"         ; fileClosed's spelling.
-HP_S9: DB "diskFull"           ; diskFull's spelling.
-HP_S10: DB "directoryFull"     ; directoryFull's spelling.
-HP_S11: DB "readOnly"          ; readOnly's spelling.
-HP_S12: DB "seekFailure"       ; seekFailure's spelling.
-HP_S13: DB "lineTooLong"       ; lineTooLong's spelling.
-HP_S14: DB "notAvailable"      ; notAvailable's spelling.
-HP_S15: DB "fileBusy"          ; fileBusy's spelling.
-HP_S16: DB "noSearch"          ; noSearch's spelling.
-HP_S17: DB "badMode"           ; badMode's spelling.
-HP_S18: DB "invalid"           ; invalid's spelling.
+HP_IOS:
+    DB   "endOfInput"              ; Member 0.
+    DB   "inputFailure"            ; Member 1.
+    DB   "outputFailure"           ; Member 2.
+    DB   "storageFailure"          ; Member 3.
+    DB   "fileNotFound"            ; Member 4.
+    DB   "fileExists"              ; Member 5.
+    DB   "badName"                 ; Member 6.
+    DB   "tooManyFiles"            ; Member 7.
+    DB   "fileClosed"              ; Member 8.
+    DB   "diskFull"                ; Member 9.
+    DB   "directoryFull"           ; Member 10.
+    DB   "readOnly"                ; Member 11.
+    DB   "seekFailure"             ; Member 12.
+    DB   "lineTooLong"             ; Member 13.
+    DB   "notAvailable"            ; Member 14.
+    DB   "fileBusy"                ; Member 15.
+    DB   "noSearch"                ; Member 16.
+    DB   "badMode"                 ; Member 17.
+    DB   "invalid"                 ; Member 18.

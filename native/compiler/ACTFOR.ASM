@@ -214,9 +214,9 @@ AC_STEP:
 ; (D58); one not a scalar, an enum, is type-mismatch there.
 
 .COMMON:                       ; A is the bound's type.
-    CP   AG_FIRST                  ; Not a scalar:
-    JP   NC,EX_EFIT                ; type-mismatch.
-    LD   B,A                       ; Keep it.
+    CP   AG_FIRST                  ; A type from AG_FIRST, an enum, is no integer:
+    JP   NC,EX_EFIT                ; type-mismatch at the bound.
+    LD   B,A                       ; Keep the bound's type.
     CP   E                         ; The same as the counter's,
     JR   Z,.LONG                   ; or
     CALL EX_WIDEN                  ; widening to it,

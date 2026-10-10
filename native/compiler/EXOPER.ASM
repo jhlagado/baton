@@ -191,16 +191,16 @@ EX_LOOK:                       ; Is the next token a binary operator?
 .ORDINARY:
     CALL EX_LBOOL                  ; Is the left Boolean?
     JR   NZ,.INTEGER               ; No: compare integers.
-    LD   A,(EX_RMETA)              ; Then the right must be Boolean too.
-    LD   D,A                       ; (its metadata)
-    CALL EX_TBOOL                  ; Is its type Boolean?
-    JR   Z,.BOOLS                  ; If not, at the left:
-    LD   A,D                       ; a known one, or
-    CP   AG_FIRST                  ; one not a scalar,
-    LD   A,DG_CLASH                ; is a mismatch,
-    JP   NC,EX_ELOP                ; a computed one
-    LD   A,DG_CONV                 ; needs a
-    JP   EX_ELOP                   ; conversion.
+    LD   A,(EX_RMETA)              ; Load the right operand's metadata;
+    LD   D,A                       ; keep it in D.
+    CALL EX_TBOOL                  ; Is the right operand's type Boolean?
+    JR   Z,.BOOLS                  ; Yes: compare two Booleans.
+    LD   A,D                       ; Otherwise A is the right operand's metadata;
+    CP   AG_FIRST                  ; known (bit 7) or non-scalar is AG_FIRST or more:
+    LD   A,DG_CLASH                ; the diagnostic is type-mismatch,
+    JP   NC,EX_ELOP                ; reported at the left operand.
+    LD   A,DG_CONV                 ; A computed scalar: the diagnostic is conversion-required,
+    JP   EX_ELOP                   ; reported at the left operand.
 .BOOLS:                        ; Two Booleans, = or <> (EX_LBOK).
     CALL EX_KNOWN                  ; Are both known?
     JR   NZ,.FOLD                  ; Then fold them.

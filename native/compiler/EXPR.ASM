@@ -272,11 +272,11 @@ EX_RTOK:
 ; compiler reports it.
 
 EX_EBOOL:                      ; A: the operands' metadata, ORed.
-    CP   AG_FIRST                  ; A right operand not Boolean:
-    LD   A,DG_CLASH                ; type-mismatch if either is known
-    JR   NC,EX_EROP                ; or not a scalar, else conversion-required (the
-    LD   A,DG_CONV                 ; reference's toRegisters), at the
-    DB   $01                       ; right: LD BC,nn passes EX_ERNG's LD.
+    CP   AG_FIRST                  ; Known (bit 7) or non-scalar: AG_FIRST or more;
+    LD   A,DG_CLASH                ; then the diagnostic is type-mismatch,
+    JR   NC,EX_EROP                ; reported at the right operand.
+    LD   A,DG_CONV                 ; Otherwise conversion-required (toRegisters's),
+    DB   $01                       ; skipped over by LD BC,nn: EX_ERNG's LD is its operand.
 EX_ERNG:                       ; The right operand is out of range.
     LD   A,DG_RANGE                ; out-of-range,
 EX_EROP:                       ; Diagnostic A at the right operand.

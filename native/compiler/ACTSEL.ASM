@@ -218,24 +218,24 @@ AC_PICK:
 ; log's bottom, kept by its form (BL_FLIP). Its end label is allocated.
 ; HN_SEL opens a handle's so.
 
-AC_SOPEN:                      ; The subject is in its slot.
-    LD   DE,(BL_LBOT)              ; The select's labels start
-    CALL BL_FLIP                   ; at the log's bottom,
-    LD   (AC_DELTA),HL             ; kept by its form;
-    LD   A,BL_TSUM                 ; first, below it,
-    CALL BL_LOG                    ; the count of their values
-    CALL VL_ZERO                   ; (AC_RSUM), from zero.
-    LD   B,CT_KSEL                 ; The select's frame
-    CALL CT_PUSH                   ; opens: HL is it.
-    LD   DE,CT_FVAR                ; Its fields from CT_FVAR
-    ADD  HL,DE                     ; are the scratch's from AC_INDEX:
-    EX   DE,HL                     ; the subject's offset and type,
-    LD   HL,AC_INDEX               ; the first range's place
-    LD   BC,8                      ; and the offset
-    LDIR                           ; of `select`.
-    LD   B,CT_FEXIT                ; Its end
-    CALL CT_NEW                    ; label;
-    JP   FW_ENTRY                  ; the arms start from the state now.
+AC_SOPEN:                      ; The subject is stored in its slot.
+    LD   DE,(BL_LBOT)              ; The log's bottom now is where this select's
+    CALL BL_FLIP                   ; labels will start; convert it to the movable form,
+    LD   (AC_DELTA),HL             ; and stage that form for the frame's CT_FSTEP field.
+    LD   A,BL_TSUM                 ; The first entry below it is the label value count:
+    CALL BL_LOG                    ; log a BL_TSUM entry; HL is past its first byte,
+    CALL VL_ZERO                   ; and zero the count's bytes (AC_RSUM finds them).
+    LD   B,CT_KSEL                 ; Open a select frame:
+    CALL CT_PUSH                   ; HL addresses the new frame.
+    LD   DE,CT_FVAR                ; Step to the frame's CT_FVAR field;
+    ADD  HL,DE                     ; HL addresses it,
+    EX   DE,HL                     ; and DE now does, as the copy's destination.
+    LD   HL,AC_INDEX               ; The staged fields start at AC_INDEX:
+    LD   BC,8                      ; eight bytes: the subject's offset and type, the place,
+    LDIR                           ; and the offset of `select` are copied into the frame.
+    LD   B,CT_FEXIT                ; Allocate the select's end label
+    CALL CT_NEW                    ; into field CT_FEXIT.
+    JP   FW_ENTRY                  ; The arms start from the flow state at this point; return.
 ;@ROUTINE OUT A CLOBBERS BC,DE,HL,CARRY,ZERO,SIGN,PARITY,HALFCARRY
 ; BeginCase: `some` and `none` select on a handle, not an integer
 ; (type-mismatch at them); otherwise the arm's body and next labels.
@@ -335,18 +335,18 @@ AC_FINAL:
     CP   TK_END                    ; only `end`:
     LD   A,DG_CASE                 ; anything else, a `case` too,
     JP   NZ,DG_ISSUE               ; is syntax at it.
-    CALL CT_MODE                   ; The mode: an arm with labels
-    BIT  2,A                       ; is
-    JR   Z,.EMPTY                  ; needed;
-    BIT  1,A                       ; without case else
-    CALL Z,AC_COVER                ; they cover the type, as if with one.
-    XOR  2                         ; Bit 1 now says there is no case else:
-    AND  3                         ; nonzero if the select completes.
-    LD   (CT_FALLS),A              ; Record it.
-    LD   B,CT_FEXIT                ; The end
-    CALL CT_DEF                    ; is here.
-    CALL FW_JOIN                   ; The arms' states met.
-    JP   CT_POP                    ; Close the frame; return.
+    CALL CT_MODE                   ; Load the select's mode.
+    BIT  2,A                       ; Bit 2: an arm with labels; one is required,
+    JR   Z,.EMPTY                  ; else report syntax at `select`.
+    BIT  1,A                       ; Bit 1: case else. Without it,
+    CALL Z,AC_COVER                ; the labels must cover the type (AC_COVER sets bit 1).
+    XOR  2                         ; Flip bit 1: now set when there is no case else;
+    AND  3                         ; nonzero if an arm falls through or no case else ran.
+    LD   (CT_FALLS),A              ; Record whether control reaches the end.
+    LD   B,CT_FEXIT                ; The select's end label
+    CALL CT_DEF                    ; is defined here.
+    CALL FW_JOIN                   ; Meet the arms' flow states.
+    JP   CT_POP                    ; Close the select's frame; return.
 .EMPTY:                        ; No arm with labels:
     LD   B,CT_FSTEP+2              ; syntax
     CALL CT_FIELD                  ; at `select`,
@@ -463,18 +463,18 @@ AC_LABEL:
     LD   A,(AC_RWID)               ; width's
     LD   C,A                       ; bytes
     LDIR                           ; follow.
-    CALL AC_RSUM                   ; The select's count, HL,
-    PUSH HL                        ; (kept)
-    LD   DE,AC_RVAL+4              ; takes
-    LD   B,4                       ; the high
-    SCF                            ; value
-    CALL VL_ADDC                   ; plus one,
-    POP  DE                        ; less
-    LD   HL,AC_RVAL                ; the low:
-    LD   B,4                       ; the range's
-    CALL VL_SUBN                   ; values, modulo 2^32.
-    LD   HL,AC_RVAL                ; The range
-    CALL .TEST                     ; is tested.
+    CALL AC_RSUM                   ; HL addresses this select's label value count.
+    PUSH HL                        ; Keep it for the subtraction below.
+    LD   DE,AC_RVAL+4              ; Add the range's high value (four bytes)
+    LD   B,4                       ; to the count, four bytes wide,
+    SCF                            ; with carry set so that one more is added:
+    CALL VL_ADDC                   ; count += high + 1.
+    POP  DE                        ; DE addresses the count again.
+    LD   HL,AC_RVAL                ; Subtract the range's low value
+    LD   B,4                       ; (four bytes):
+    CALL VL_SUBN                   ; count -= low, so the range's size is added, modulo 2^32.
+    LD   HL,AC_RVAL                ; HL addresses the range, low and high,
+    CALL .TEST                     ; to test the subject against it.
     CALL PR_PEEK                   ; Another label
     CP   TK_COMMA                  ; after a comma?
     RET  NZ                        ; No: the labels are done.
@@ -754,13 +754,13 @@ AC_LABEL:
 ; bytes in the log's first entry below its place (AC_SOPEN, BL_TSUM).
 
 AC_RSUM:                       ; The select's frame is innermost.
-    LD   B,CT_FSTEP                ; Its place's
-    CALL CT_FWORD                  ; form,
-    EX   DE,HL                     ; in DE,
-    CALL BL_FLIP                   ; is its address;
-    LD   DE,BL_EBACK+2             ; the entry below,
-    ADD  HL,DE                     ; past its first two bytes.
-    RET                            ; Done.
+    LD   B,CT_FSTEP                ; Field CT_FSTEP holds the select's log place,
+    CALL CT_FWORD                  ; in the log's movable form; HL is that form.
+    EX   DE,HL                     ; Pass the form in DE
+    CALL BL_FLIP                   ; to convert it to the place's address, HL.
+    LD   DE,BL_EBACK+2             ; The count's entry is one entry below the place,
+    ADD  HL,DE                     ; and the count starts two bytes into it.
+    RET                            ; HL addresses the count.
 
 ;@ROUTINE IN A OUT A CLOBBERS BC,DE,HL,CARRY,ZERO,SIGN,PARITY,HALFCARRY
 ; A select without case else (D51): its labels, which never overlap, must
@@ -770,56 +770,56 @@ AC_RSUM:                       ; The select's frame is innermost.
 ; mode bit 1, as with case else: an arm always runs. A is the mode, in and
 ; out; a handle select (bit 3) is returned as it is.
 
-AC_COVER:                      ; No case else:
-    BIT  3,A                       ; a handle select's
-    RET  NZ                        ; arms are its own (OW_ARM).
-    CALL AC_RSUM                   ; The count,
-    PUSH HL                        ; (kept)
-    LD   B,CT_FBND                 ; and the
-    CALL CT_FBYTE                  ; subject's type.
-    POP  HL                        ; (the count)
-    CP   AG_FIRST                  ; An enum's
-    JR   C,.INT                    ; members:
-    PUSH HL                        ; (the count)
-    CALL AG_DESC                   ; its
-    INC  HL                        ; descriptor's
-    LD   C,(HL)                    ; count, C,
-    POP  HL                        ; is taken
-    LD   A,(HL)                    ; from
-    SUB  C                         ; the
-    LD   (HL),A                    ; count's low byte;
-    LD   A,C                       ; zero means 256,
-    OR   A                         ; a byte's values;
-    JR   NZ,.CHECK                 ; otherwise the rest is zero.
-    INC  A                         ; One byte, as for u8.
-    JR   .POWER                    ; Its 2^8.
-.INT:                          ; An integer:
-    CALL GX_PROP                   ; its size
-    AND  7                         ; in bytes,
-.POWER:                        ; A: its 2^(8A) is taken
-    CP   4                         ; (2^32 is zero)
-    JR   Z,.CHECK                  ; from the count,
-    PUSH HL                        ; one from
-    LD   E,A                       ; its
-    LD   D,0                       ; byte
-    ADD  HL,DE                     ; A.
-    DEC  (HL)                      ; Taken.
-    POP  HL                        ; The count:
-.CHECK:                        ; covering if now zero.
-    LD   A,(HL)                    ; Its
-    INC  HL                        ; four
-    OR   (HL)                      ; bytes
-    INC  HL                        ; are
-    OR   (HL)                      ; all
-    INC  HL                        ; zero,
-    OR   (HL)                      ; else a value
-    JR   NZ,.SHORT                 ; is uncovered.
-    CALL CT_FLAGS                  ; The mode
-    SET  1,(HL)                    ; as with case else,
-    LD   A,(HL)                    ; returned.
+AC_COVER:                      ; A is the select's mode.
+    BIT  3,A                       ; Bit 3 marks a handle select,
+    RET  NZ                        ; whose arms are checked elsewhere (OW_ARM): return.
+    CALL AC_RSUM                   ; HL addresses the labels' value count.
+    PUSH HL                        ; Keep it while the subject's type is read.
+    LD   B,CT_FBND                 ; Field CT_FBND holds the subject's type;
+    CALL CT_FBYTE                  ; A is that type.
+    POP  HL                        ; HL addresses the count again.
+    CP   AG_FIRST                  ; Compare the type with AG_FIRST, the first table ID;
+    JR   C,.INT                    ; below it the subject is an integer.
+    PUSH HL                        ; An enum: keep the count's address
+    CALL AG_DESC                   ; while its descriptor is found.
+    INC  HL                        ; Step to the descriptor's member count.
+    LD   C,(HL)                    ; C is the member count, zero meaning 256.
+    POP  HL                        ; HL addresses the value count again.
+    LD   A,(HL)                    ; Load the count's low byte,
+    SUB  C                         ; subtract the member count,
+    LD   (HL),A                    ; and store it back: zero when they agree.
+    LD   A,C                       ; Copy the member count to A
+    OR   A                         ; and test it: zero means 256 members.
+    JR   NZ,.CHECK                 ; Fewer than 256: the other bytes must be zero.
+    INC  A                         ; 256 members: treat them as a byte's 2^8 values,
+    JR   .POWER                    ; and take 2^8 from the count as for u8.
+.INT:                          ; An integer subject.
+    CALL GX_PROP                   ; Its properties: the size is in bits 0 to 2.
+    AND  7                         ; A is the size in bytes: 1, 2 or 4.
+.POWER:                        ; Take 2^(8A) from the count.
+    CP   4                         ; 2^32 is zero in four bytes:
+    JR   Z,.CHECK                  ; nothing to take for a long.
+    PUSH HL                        ; Keep the count's address.
+    LD   E,A                       ; E is A, the index of the count byte
+    LD   D,0                       ; that holds 2^(8A)'s one bit; D is zero.
+    ADD  HL,DE                     ; HL addresses that byte.
+    DEC  (HL)                      ; Decrement it: 2^(8A) is taken from the count.
+    POP  HL                        ; HL addresses the count again.
+.CHECK:                        ; The count is zero exactly when the labels cover the type.
+    LD   A,(HL)                    ; Load its first byte,
+    INC  HL                        ; step to the second,
+    OR   (HL)                      ; OR it in,
+    INC  HL                        ; step to the third,
+    OR   (HL)                      ; OR it in,
+    INC  HL                        ; step to the fourth,
+    OR   (HL)                      ; and OR it in: zero only if all four are.
+    JR   NZ,.SHORT                 ; Nonzero: some value has no arm.
+    CALL CT_FLAGS                  ; Covered: HL addresses the select's mode.
+    SET  1,(HL)                    ; Set bit 1, as if it had case else: an arm always runs.
+    LD   A,(HL)                    ; Return the mode in A.
     RET                            ; Done.
-.SHORT:                        ; Some value has no arm:
-    LD   B,CT_FSTEP+2              ; select-incomplete
-    CALL CT_FIELD                  ; at
-    LD   A,DG_SINC                 ; `select`.
-    JP   DG_AT                     ; No return.
+.SHORT:                        ; A value is uncovered: select-incomplete.
+    LD   B,CT_FSTEP+2              ; Field CT_FSTEP+2 holds the offset of `select`;
+    CALL CT_FIELD                  ; HL addresses it.
+    LD   A,DG_SINC                 ; The diagnostic is select-incomplete,
+    JP   DG_AT                     ; raised at `select`; no return.

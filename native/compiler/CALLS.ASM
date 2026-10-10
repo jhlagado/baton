@@ -547,10 +547,10 @@ RO_SVC:
 ; behind (RO_ESC). A returns the result type, zero for none.
 
 RO_ARGS:
-    LD   A,(RO_TARM)               ; A try before the call
-    PUSH AF                        ; is kept: no call
-    XOR  A                         ; among its arguments
-    LD   (RO_TARM),A               ; takes it.
+    LD   A,(RO_TARM)               ; Load the flag of a try before this call;
+    PUSH AF                        ; keep it on the stack across the arguments.
+    XOR  A                         ; A is zero.
+    LD   (RO_TARM),A               ; Clear the flag: no call among the arguments takes this try.
     LD   BC,(TK_POS)               ; The callee's name is current: its offset
     PUSH BC                        ; is kept for a failure's diagnostics.
     LD   A,(RO_DEPTH)              ; Calls already being parsed.
@@ -576,22 +576,22 @@ RO_ARGS:
     CALL PR_PEEK                   ; Does the call close
     CP   TK_RPAR                   ; where an argument is due?
     JP   Z,.ARITY                  ; Too few arguments.
-    SUB  TK_VAR                    ; Zero if marked var (D49):
-    LD   C,A                       ; kept.
-    POP  AF                        ; The parameter's type:
-    PUSH AF                        ; a var parameter's (AG_VAR)
-    RLA                            ; argument is marked
-    LD   A,C                       ; var, and
-    JR   NC,.PLAIN                 ; no other's.
-    OR   A                         ; Marked?
-    JP   NZ,.EMARK                 ; No: var-marker.
-    CALL PR_TAKE                   ; Past var.
-    JR   .MARKED                   ; The argument.
-.PLAIN:                        ; Not a var parameter:
-    OR   A                         ; marked
-    JP   Z,.EMARK                  ; is var-marker.
-.MARKED:                       ; The marker is right.
-    POP  AF                        ; The parameter's type.
+    SUB  TK_VAR                    ; A is zero if the argument is marked `var` (D49).
+    LD   C,A                       ; Keep that in C.
+    POP  AF                        ; Load the parameter's type, then
+    PUSH AF                        ; push it back to keep it for the argument.
+    RLA                            ; Carry is AG_VAR, bit 7: a var parameter.
+    LD   A,C                       ; A is zero again if the argument is marked.
+    JR   NC,.PLAIN                 ; Not a var parameter: check there is no marker.
+    OR   A                         ; A var parameter: is the argument marked?
+    JP   NZ,.EMARK                 ; Unmarked: report var-marker at the argument.
+    CALL PR_TAKE                   ; Marked: consume `var`.
+    JR   .MARKED                   ; Go on to parse the argument.
+.PLAIN:                        ; A parameter that is not var:
+    OR   A                         ; test for a marker;
+    JP   Z,.EMARK                  ; marked: report var-marker at `var`.
+.MARKED:                       ; The marker matches the parameter.
+    POP  AF                        ; Recover the parameter's type.
     CALL AG_SCAL                 ; An aggregate?
     JR   NC,.AGGR                  ; Its address is passed.
     CALL RO_ARG                    ; D, E and HL describe the argument.
@@ -735,29 +735,29 @@ RO_ARGS:
     CALL PR_TAKE                   ; Consume the closing parenthesis.
     LD   HL,RO_DEPTH               ; This call
     DEC  (HL)                      ; is parsed.
-    POP  HL                        ; The callee's name's offset
-    LD   (RO_CALLP),HL             ; for RO_FAILS,
-    POP  AF                        ; and the try
-    LD   (RO_TARM),A               ; before it.
-    POP  HL                        ; The callee's record from RO_RTYPE.
-    LD   A,(HL)                    ; Its result type
-    PUSH AF                        ; is returned, so keep it.
-    INC  HL                        ; Then its flags,
-    LD   A,(HL)                    ; whether it can fail,
-    PUSH AF                        ; are kept too;
-    LD   B,AG_FIRST                ; a service's failure enum is IoError,
-    BIT  6,A                       ; (RO_FSVC)
-    JR   NZ,.DOM                   ; a routine's
-    PUSH HL                        ; in
-    LD   DE,RO_RDOM-RO_RFLAG       ; its
-    ADD  HL,DE                     ; record
-    LD   B,(HL)                    ; (D54),
-    POP  HL                        ; kept
-.DOM:                          ; for try
-    LD   A,B                       ; and
-    LD   (RO_KDOM),A               ; handle;
-    POP  AF                        ; the flags
-    PUSH AF                        ; again.
+    POP  HL                        ; HL is the callee's name's offset,
+    LD   (RO_CALLP),HL             ; kept for RO_FAILS's diagnostics.
+    POP  AF                        ; A is the flag of a try before this call,
+    LD   (RO_TARM),A               ; restored for RO_FAILS.
+    POP  HL                        ; HL addresses the callee's record from RO_RTYPE.
+    LD   A,(HL)                    ; Load its result type
+    PUSH AF                        ; and keep it to return.
+    INC  HL                        ; Step to the callee's flags,
+    LD   A,(HL)                    ; load them,
+    PUSH AF                        ; and keep them for the failure check below.
+    LD   B,AG_FIRST                ; B is IoError's ID, a service's failure enum.
+    BIT  6,A                       ; Bit 6, RO_FSVC, marks a service.
+    JR   NZ,.DOM                   ; A service: its enum is IoError.
+    PUSH HL                        ; A routine: keep the flags' address,
+    LD   DE,RO_RDOM-RO_RFLAG       ; step from the flags to the record's
+    ADD  HL,DE                     ; RO_RDOM field,
+    LD   B,(HL)                    ; and load the routine's failure enum into B.
+    POP  HL                        ; Recover the flags' address.
+.DOM:                          ; B is the callee's failure enum.
+    LD   A,B                       ; Copy it to A
+    LD   (RO_KDOM),A               ; and keep it for try and handle (RO_KDOM).
+    POP  AF                        ; Reload the flags into A,
+    PUSH AF                        ; and keep them on the stack again.
     AND  RO_FVRES                  ; and whether
     XOR  RO_FVRES                  ; its result
     LD   (RO_CRO),A                ; is read-only.
@@ -783,22 +783,22 @@ RO_ARGS:
 .SMALLER:                      ; The need is accounted.
     XOR  A                         ; No path's root
     LD   (RO_ESC),A                ; survives the call.
-    POP  AF                        ; The callee's flags:
-    AND  RO_FFAIL                  ; can it fail?
-    CALL NZ,RO_FAILS               ; Then its failure is consumed.
-    LD   A,(RO_TARM)               ; A try still waiting
-    OR   A                         ; is before a call
-    JR   NZ,.MOOT                  ; that cannot fail.
-    POP  AF                        ; A is the result type.
-    OR   A                         ; Carry clear.
-    RET                            ; The result is in A or HL.
-.MOOT:                         ; not-failable,
-    LD   HL,RO_TPOS                ; at the try.
-    LD   A,DG_SAFE                 ; No
-    JP   DG_AT                     ; return.
-.EMARK:                        ; A var marker missing or extra:
-    CALL DG_RAISE                  ; var-marker,
-    DB   DG_VMARK                  ; at the argument.
+    POP  AF                        ; Recover the callee's flags.
+    AND  RO_FFAIL                  ; Is RO_FFAIL set: can the callee fail?
+    CALL NZ,RO_FAILS               ; Then consume its failure now.
+    LD   A,(RO_TARM)               ; Is a try still armed after that?
+    OR   A                         ; Only if the callee cannot fail:
+    JR   NZ,.MOOT                  ; then report not-failable at the try.
+    POP  AF                        ; Recover the result type.
+    OR   A                         ; Clear carry.
+    RET                            ; Return the result type; the value is in A or HL.
+.MOOT:                         ; A try before a call that cannot fail.
+    LD   HL,RO_TPOS                ; HL addresses the try's saved offset.
+    LD   A,DG_SAFE                 ; The diagnostic is not-failable;
+    JP   DG_AT                     ; raise it at the try; no return.
+.EMARK:                        ; A missing or extra `var` marker:
+    CALL DG_RAISE                  ; raise var-marker
+    DB   DG_VMARK                  ; at the current token.
 .DEEP:                         ; Calls nest too deeply in arguments.
     CALL DG_RAISE                  ; Abandon the build.
     DB   DG_DEEP                   ; Nested too deeply.
@@ -818,32 +818,32 @@ RO_ARGS:
 ; which the statement's end consumes.
 
 RO_FAILS:
-    LD   A,(RO_TARM)               ; After try?
-    OR   A                         ; Then
-    JR   NZ,.TRY                   ; it is passed on.
-    CALL PR_PEEK                   ; What follows the call?
-    CP   TK_HANDL                  ; A handler?
-    JR   Z,.TRAP                   ; Jump to it on failure.
-    LD   A,DG_LEAK                 ; Otherwise the failure is lost,
-    JR   .LOST                     ; failure-unconsumed.
-.TRY:                          ; The try is consumed:
-    XOR  A                         ; none
-    LD   (RO_TARM),A               ; waits.
-    CALL PR_PEEK                   ; The call
-    CP   TK_EOL                    ; ends its
-    JP   NZ,AC_ELINE               ; statement.
-    LD   A,(RO_CFLAG)              ; Passing it on needs
-    AND  RO_FFAIL                  ; a failable routine;
-    LD   A,DG_SAFE                 ; this one is not:
-    JR   Z,.AT                     ; not-failable.
-    LD   A,(RO_KDOM)               ; The callee's failure enum
-    LD   HL,RO_CDOM                ; must be
-    CP   (HL)                      ; this routine's (D54),
-    LD   A,DG_FDOM                 ; else failure-domain,
-    JR   NZ,.LOST                  ; naming the callee.
-    CALL HN_RELAY                  ; To the exit, owners freed, A the code.
-    LD   A,RG_EXIT                 ; The exit
-    JR   .PEND                     ; is pending.
+    LD   A,(RO_TARM)               ; Is a try armed for this call?
+    OR   A                         ; Test the flag;
+    JR   NZ,.TRY                   ; if so, pass the failure on.
+    CALL PR_PEEK                   ; Otherwise look at the token after the call.
+    CP   TK_HANDL                  ; Is it `handle`?
+    JR   Z,.TRAP                   ; Then branch to the handler on failure.
+    LD   A,DG_LEAK                 ; Neither try nor handle: failure-unconsumed,
+    JR   .LOST                     ; reported at the call.
+.TRY:                          ; Pass the failure on: consume the try.
+    XOR  A                         ; A is zero:
+    LD   (RO_TARM),A               ; clear the try's flag.
+    CALL PR_PEEK                   ; The call must end its statement:
+    CP   TK_EOL                    ; the next token must be the line's end,
+    JP   NZ,AC_ELINE               ; else report syntax there.
+    LD   A,(RO_CFLAG)              ; Load the enclosing routine's flags.
+    AND  RO_FFAIL                  ; Can it fail (RO_FFAIL)?
+    LD   A,DG_SAFE                 ; If not, the diagnostic is not-failable,
+    JR   Z,.AT                     ; reported at the call.
+    LD   A,(RO_KDOM)               ; Load the callee's failure enum.
+    LD   HL,RO_CDOM                ; HL addresses this routine's failure enum.
+    CP   (HL)                      ; Compare them (D54).
+    LD   A,DG_FDOM                 ; Different: the diagnostic is failure-domain,
+    JR   NZ,.LOST                  ; reported at the call, naming the callee.
+    CALL HN_RELAY                  ; Same: jump to the exit on failure, freeing owners.
+    LD   A,RG_EXIT                 ; The pending failure's label is the exit,
+    JR   .PEND                     ; recorded as pending.
 .TRAP:                         ; A handler follows.
     LD   A,(EM_TEMPS)              ; The temporaries
     LD   (RO_KEPT),A               ; beneath the call.

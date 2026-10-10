@@ -228,5 +228,5 @@ RO_FFWD EQU  8                 ; Routine flag: declared forward; it checks the s
 RO_FVRES EQU  $10              ; Routine flag: its aggregate result is var.
 RO_FPRIV EQU  $20              ; Routine flag: private, hidden when its part ends.
 RO_FSVC EQU  $40               ; Routine flag: a service, failing with IoError (AG_FIRST).
-HP_SKIP EQU  10                ; NAMES' IoError header before HP_NAMES (PREDEF.ASM).
+HP_SKIP EQU  2                 ; NAMES' header before HP_NAMES: IoError's spellings' address.
 

@@ -83,7 +83,7 @@ export const OVERLAYS = [
   {
     name: "PREP",
     equate: "OV_PREP",
-    files: ["PREP.ASM"],
+    files: ["PREP.ASM", "IOERRS.ASM"],
     offset: 0,
     after: "NAMES",
   },

@@ -51,8 +51,9 @@
 ;  records and the larger of them together. They replace each other, each
 ;  loaded again when next needed; one whose entry is running when another
 ;  replaces it (an f32 literal read in OWNERS' actions, a spill while they
-;  write a blob) is loaded again before control returns to it (OV_RUN). The end of a routine and the writing of
-;  a blob, used by every routine, are resident (CLOSE.ASM, BLEND.ASM).
+;  write a blob) is loaded again before control returns to it (OV_RUN).
+;  The end of a routine and the writing of a blob, used by every routine,
+;  are resident (CLOSE.ASM, BLEND.ASM).
 ;
 ;  BASIE.OVL is magic BSIO, version 1.0, the 16-bit sum of the resident
 ;  image's bytes from $0100 to OV_AREA, which ties the file to this
@@ -148,36 +149,36 @@ OV_FCALL:                      ; A is the offset, HL the argument.
 ; above NAMES (an f32 literal read inside OWNERS' actions, a spill while
 ; it writes a blob), is loaded again before the return.
 
-OV_PCALL:                      ; A is the entry's offset.
-    LD   B,OV_OWNS                 ; OWNERS'; fall into OV_XCALL.
-OV_XCALL:                      ; B is the overlay.
-    LD   C,A                       ; (the offset)
-    LD   A,(OV_RUN)                ; The overlay running, if any,
-    PUSH AF                        ; kept;
-    LD   A,B                       ; B's
-    LD   (OV_RUN),A                ; runs now:
-    LD   A,C                       ; its entry
-    CALL .CALL                     ; is run.
-    EX   (SP),HL                   ; H: the one that ran before,
-    PUSH AF                        ; (the entry's A and flags)
-    LD   A,H                       ; again
-    LD   (OV_RUN),A                ; the one running:
-    INC  A                         ; none,
-    JR   Z,.BACK                   ; or
-    DEC  A                         ; one still
-    LD   HL,OV_CUR                 ; loaded,
-    CP   (HL)                      ; stays;
-    JR   Z,.BACK                   ; another
-    PUSH IX                        ; is loaded
-    PUSH IY                        ; again,
-    CALL OV_LOAD                   ; IX and IY
-    POP  IY                        ; kept
-    POP  IX                        ; (BDOS).
-.BACK:                         ; The entry's
-    POP  AF                        ; A and flags,
+OV_PCALL:                      ; A is the entry's offset in OWNERS.
+    LD   B,OV_OWNS                 ; The overlay is OWNERS; fall into OV_XCALL.
+OV_XCALL:                      ; B is the overlay, A the entry's offset, HL its argument.
+    LD   C,A                       ; Keep the offset in C.
+    LD   A,(OV_RUN)                ; Load the overlay whose entry is running now, $FF for none,
+    PUSH AF                        ; and keep it, to restore when this entry returns.
+    LD   A,B                       ; A is overlay B.
+    LD   (OV_RUN),A                ; Record B as the overlay whose entry runs now.
+    LD   A,C                       ; A is the entry's offset again.
+    CALL .CALL                     ; Load B and run the entry: A, HL, flags are its results.
+    EX   (SP),HL                   ; Stack the entry's HL; H is the overlay running before.
+    PUSH AF                        ; Stack the entry's A and flags too.
+    LD   A,H                       ; A is the overlay that ran before.
+    LD   (OV_RUN),A                ; Record it as the one running again.
+    INC  A                         ; Was none running ($FF)?
+    JR   Z,.BACK                   ; Then nothing needs to be reloaded.
+    DEC  A                         ; Restore the overlay's number in A.
+    LD   HL,OV_CUR                 ; Is it still the overlay loaded last?
+    CP   (HL)                      ; Compare with OV_CUR;
+    JR   Z,.BACK                   ; if so, its code is intact.
+    PUSH IX                        ; Another replaced it: keep IX,
+    PUSH IY                        ; keep IY (the BDOS may change both),
+    CALL OV_LOAD                   ; load the running overlay again,
+    POP  IY                        ; restore IY,
+    POP  IX                        ; and restore IX.
+.BACK:                         ; Return the entry's results:
+    POP  AF                        ; A and the flags,
     POP  HL                        ; and HL.
     RET                            ; Done.
-.CALL:                         ; A is the offset, HL the argument.
+.CALL:                         ; Load overlay B and run entry A with HL.
     PUSH IX                        ; Keep IX
     PUSH IY                        ; and IY,
     PUSH HL                        ; the argument
@@ -217,8 +218,8 @@ OV_XCALL:                      ; B is the overlay.
 ; loaded again before the return. Carry returns as the entry leaves it.
 
 OV_SCALL:                      ; A is the entry, HL its argument.
-    LD   B,OV_SPILL                ; SPILL's;
-    JR   OV_XCALL                  ; run.
+    LD   B,OV_SPILL                ; The overlay is SPILL;
+    JR   OV_XCALL                  ; Run it; a displaced running overlay is reloaded.
 
 ;@ROUTINE IN C,HL OUT CARRY CLOBBERS A,DE,IX,IY,ZERO,SIGN,PARITY,HALFCARRY
 ; Read record C of BASIE.OVL to HL. Carry if it can't be read. B, C and

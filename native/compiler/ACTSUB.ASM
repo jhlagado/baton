@@ -462,25 +462,25 @@ AC_FROM:
 ; codes members of that enum (D54), RO_CDOM; any other name is
 ; type-mismatch at it.
 
-AC_FAILS:
-    LD   HL,RO_CFLAG               ; The routine's flags
-    SET  0,(HL)                    ; gain RO_FFAIL.
-    CALL SY_FIND                   ; The name's symbol:
-    JR   NC,.NOT                   ; none,
-    INC  HL                        ; or
-    INC  HL                        ; its
-    INC  HL                        ; class,
-    LD   A,(HL)                    ; a type
-    CP   SY_TYPE                   ; name's,
-    JR   NZ,.NOT                   ; whose
-    INC  HL                        ; type
-    LD   A,(HL)                    ; ID
-    CP   AG_FIRST                  ; is
-    JR   C,.NOT                    ; an
-    CALL AG_SCAL                   ; enum's.
-    LD   (RO_CDOM),A               ; Kept.
-    RET  C                         ; Back to the engine.
-.NOT:                          ; Anything else:
+AC_FAILS:                      ; After `fails NAME`, NAME the current token.
+    LD   HL,RO_CFLAG               ; The routine's flags:
+    SET  0,(HL)                    ; set RO_FFAIL, the routine can fail.
+    CALL SY_FIND                   ; Find NAME in the symbol table; carry if found.
+    JR   NC,.NOT                   ; Not declared: no enum.
+    INC  HL                        ; Step past the symbol's
+    INC  HL                        ; name address and length
+    INC  HL                        ; to its class byte.
+    LD   A,(HL)                    ; Load the class byte.
+    CP   SY_TYPE                   ; A type name has class SY_TYPE exactly.
+    JR   NZ,.NOT                   ; Anything else is no enum.
+    INC  HL                        ; Step to the payload,
+    LD   A,(HL)                    ; the type's ID.
+    CP   AG_FIRST                  ; IDs below AG_FIRST are built-in scalars,
+    JR   C,.NOT                    ; not enums.
+    CALL AG_SCAL                   ; Carry if the type is an enum (a table scalar).
+    LD   (RO_CDOM),A               ; Record the ID as the routine's failure enum.
+    RET  C                         ; An enum: return to the engine.
+.NOT:                          ; Not an enum:
     CALL DG_RAISE                  ; type-mismatch,
     DB   DG_CLASH                  ; at the name.
 
@@ -789,8 +789,8 @@ AC_ESAFE:
 ;@ROUTINE OUT A,CARRY,ZERO CLOBBERS SIGN,PARITY,HALFCARRY,BC,DE,HL
 ; Require "=", then fall into AC_TRY: an assignment's source.
 
-AC_EQTRY:                      ; Before the source.
-    CALL PR_EQUAL                  ; The equals sign; fall into AC_TRY.
+AC_EQTRY:                      ; Before an assignment's source.
+    CALL PR_EQUAL                  ; Consume `=`, or report syntax; fall into AC_TRY.
 
 ;@ROUTINE OUT A,CARRY,ZERO CLOBBERS SIGN,PARITY,HALFCARRY,BC,DE,HL
 ; Take `try` (D48) where a failable call may stand, a call statement, a
@@ -798,25 +798,25 @@ AC_EQTRY:                      ; Before the source.
 ; offset RO_TPOS) for the call, whose routine or service must be named
 ; next (syntax at that token otherwise, a name expected).
 
-AC_TRY:                        ; Where a call may stand.
-    CALL PR_PEEK                   ; A try
-    CP   TK_TRY                    ; here?
-    RET  NZ                        ; No.
-    CALL PR_TAKE                   ; Taken:
-    LD   HL,(TK_POS)               ; its
-    LD   (RO_TPOS),HL              ; offset,
-    LD   (RO_TARM),A               ; waiting (A is TK_TRY).
-    CALL PR_PEEK                   ; A name
-    CP   TK_NAME                   ; follows,
-    JR   NZ,.NAME                  ; a routine's
-    CALL RO_FIND                   ; (Z)
-    RET  Z                         ; or
-    CALL RO_LIB                    ; a service's
-    JR   NC,.NAME                  ; (carry,
-    RET  P                         ; sign clear).
-.NAME:                         ; Anything else:
-    CALL DG_RAISE                  ; syntax, a name
-    DB   DG_TOKEN+TK_NAME          ; expected.
+AC_TRY:                        ; Where a failable call may stand.
+    CALL PR_PEEK                   ; Look at the next token.
+    CP   TK_TRY                    ; Is it `try`?
+    RET  NZ                        ; No: nothing to do.
+    CALL PR_TAKE                   ; Consume it; A is TK_TRY, which is nonzero.
+    LD   HL,(TK_POS)               ; Keep the offset of `try`
+    LD   (RO_TPOS),HL              ; for a not-failable diagnostic at it.
+    LD   (RO_TARM),A               ; Arm the try: nonzero RO_TARM until the call takes it.
+    CALL PR_PEEK                   ; Look at the token after `try`.
+    CP   TK_NAME                   ; It must be a name.
+    JR   NZ,.NAME                  ; If not, report syntax here.
+    CALL RO_FIND                   ; Is the name a routine's? Zero if so,
+    RET  Z                         ; and then the call follows: return.
+    CALL RO_LIB                    ; Is it predeclared? Carry if so,
+    JR   NC,.NAME                  ; else it is no routine: report syntax.
+    RET  P                         ; A predeclared service has the sign clear: return.
+.NAME:                         ; Not a routine or service name:
+    CALL DG_RAISE                  ; syntax, a name expected,
+    DB   DG_TOKEN+TK_NAME          ; at the current token.
 
 ;@ROUTINE NORETURN
 ; Raise syntax, the end of the line expected: what follows a call after
@@ -840,10 +840,10 @@ AC_EMOOT:
 ; the exit; a handler would leave the local without a value (syntax at
 ; `handle`, the declaration's end expected). Fall into AC_DROP.
 
-AC_RELAY:
-    LD   A,(RO_PEND)               ; The failure's
-    AND  $7F                       ; label: the exit's,
-    JR   NZ,AC_ELINE               ; or a handler's.
+AC_RELAY:                      ; A failure is pending after a local's initializer.
+    LD   A,(RO_PEND)               ; Load its label, marked with bit 7;
+    AND  $7F                       ; the label is zero (RG_EXIT) for a try.
+    JR   NZ,AC_ELINE               ; A handler's label: report syntax at `handle`.
 
 ;@ROUTINE OUT A,CARRY,ZERO CLOBBERS SIGN,PARITY,HALFCARRY
 ; The pending failure is handled. Returns A zero.

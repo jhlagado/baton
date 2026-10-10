@@ -121,26 +121,26 @@ OW_NEW:                        ; The name is retained.
 ; Island PoolRecord: the record a pool holds. Anything but a record's name
 ; is pool-needs-record, at it (the reference's poolDeclaration).
 
-OW_REC:                        ; After `as`.
-    CALL PR_PEEK                   ; A name?
-    CP   TK_NAME                   ; If not,
-    JR   NZ,.NEED                  ; a pool holds records.
-    CALL PR_TAKE                   ; Take it.
-    CALL SY_FIND                   ; A symbol of the name?
-    JR   NC,.NEED                  ; No.
-    INC  HL                        ; Its
-    INC  HL                        ; class
-    INC  HL                        ; byte:
-    LD   A,(HL)                    ; a record
-    CP   SY_RTYPE                  ; type?
-    JR   NZ,.NEED                  ; No.
-    INC  HL                        ; Its payload,
+OW_REC:                        ; After `pool NAME:`, the record type is due.
+    CALL PR_PEEK                   ; Look at the next token.
+    CP   TK_NAME                   ; Is it a name?
+    JR   NZ,.NEED                  ; If not, a pool holds records: pool-needs-record.
+    CALL PR_TAKE                   ; Consume the name.
+    CALL SY_FIND                   ; Find its symbol; carry if declared.
+    JR   NC,.NEED                  ; Undeclared: pool-needs-record.
+    INC  HL                        ; Step past the symbol's
+    INC  HL                        ; name address and length
+    INC  HL                        ; to its class byte.
+    LD   A,(HL)                    ; Load the class byte.
+    CP   SY_RTYPE                  ; Is it a type name's?
+    JR   NZ,.NEED                  ; If not: pool-needs-record.
+    INC  HL                        ; Step to the payload,
     LD   A,(HL)                    ; the type's ID,
-    LD   (PL_NREC),A               ; kept,
-    CALL AG_DESC                   ; must name
-    LD   A,(HL)                    ; a record,
-    CP   AG_KREC                   ; not an enum.
-    RET  Z                         ; Back to the engine.
+    LD   (PL_NREC),A               ; and keep it as the pool's record type.
+    CALL AG_DESC                   ; HL addresses the type's descriptor.
+    LD   A,(HL)                    ; Load the descriptor's kind.
+    CP   AG_KREC                   ; A record type? (An enum is a type name too.)
+    RET  Z                         ; A record: return to the engine.
 .NEED:                         ; Not a record:
     CALL DG_RAISE                  ; pool-needs-record,
     DB   DG_PNREC                  ; at the token.
